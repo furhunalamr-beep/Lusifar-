@@ -1,0 +1,330 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { Sword, Target, Plus, Search, Filter, Clock, MapPin, Zap, Activity } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useSystem } from '../lib/SystemContext';
+import { SystemButton, SystemCard, RankBadge, LegendaryTitle } from './SystemUI';
+import { Quest, Rank } from '../types';
+import { cn } from '../lib/utils';
+import { GoogleGenAI } from "@google/genai";
+
+export const QuestBoard = () => {
+  const { quests, fetchQuests, addLog, updateStats, stats, gainExp } = useSystem();
+  const [isCreating, setIsCreating] = useState(false);
+  const [newQuestTitle, setNewQuestTitle] = useState('');
+  const [newQuestDifficulty, setNewQuestDifficulty] = useState<Rank>('E');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+
+  const generateAIQuest = async () => {
+    if (!newQuestTitle.trim() || isGenerating) return;
+    setIsGenerating(true);
+    addLog(`[SYSTEM] DESIGNING ACADEMIC CHALLENGE FOR: ${newQuestTitle.toUpperCase()}...`, 'info');
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Generate a Solo Leveling academic quest for the topic: '${newQuestTitle}'.
+        Respond ONLY with valid JSON (no markdown):
+        {"title": "Quest Title", "description": "Dramatic academic description", "difficulty": "C", "expReward": 250, "goldReward": 400, "manaCost": 15}`
+      });
+      
+      const text = response.text || '';
+      const cleanJson = text.replace(/```json|```/g, '').trim();
+      const data = JSON.parse(cleanJson);
+
+      const questData = {
+        id: crypto.randomUUID(),
+        title: data.title || newQuestTitle,
+        description: data.description,
+        difficulty: data.difficulty as Rank,
+        expReward: data.expReward,
+        goldReward: data.goldReward,
+        manaCost: data.manaCost,
+        status: 'available' as const,
+        type: 'ai' as const,
+        category: 'AI Generated'
+      };
+
+      await fetch('/api/quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(questData)
+      });
+      
+      fetchQuests();
+      addLog(`[SYSTEM] ACADEMIC QUEST REGISTERED: ${questData.title}`, 'success');
+      setNewQuestTitle('');
+      setIsCreating(false);
+    } catch (e) {
+      addLog('[SYSTEM] AI GENERATION ERROR. MANUAL ENTRY REQUIRED.', 'alert');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const startQuest = async (quest: Quest) => {
+    console.log("Attempting to start quest:", quest);
+    if (stats.mana < quest.manaCost) {
+      addLog(`[SYSTEM] INSUFFICIENT MANA TO START ${quest.title}. Have: ${stats.mana}, Need: ${quest.manaCost}`, 'alert');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/quests/${quest.id}/start`, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+      
+      updateStats({ mana: stats.mana - quest.manaCost });
+      fetchQuests();
+      addLog(`[SYSTEM] QUEST INITIATED: ${quest.title}. BEGIN STUDY.`, 'success');
+    } catch (error) {
+      console.error("Error starting quest:", error);
+      addLog(`[SYSTEM] ERROR STARTING QUEST: ${error instanceof Error ? error.message : 'Unknown error'}`, 'alert');
+    }
+  };
+
+  const completeQuest = async (quest: Quest) => {
+    await fetch(`/api/quests/${quest.id}/complete`, { method: 'POST' });
+    gainExp(quest.expReward);
+    updateStats({ gold: stats.gold + quest.goldReward });
+    fetchQuests();
+    addLog(`[SYSTEM] ACADEMIC QUEST CLEARED: ${quest.title}. REWARDS COLLECTED.`, 'success');
+  };
+
+  const populateAllRanks = async () => {
+    const ranks: Rank[] = ['E', 'D', 'C', 'B', 'A', 'S'];
+    for (const rank of ranks) {
+      const baseRewards = {
+        E: { exp: 50, gold: 100, mana: 10 },
+        D: { exp: 150, gold: 300, mana: 25 },
+        C: { exp: 400, gold: 800, mana: 50 },
+        B: { exp: 1000, gold: 2000, mana: 80 },
+        A: { exp: 3000, gold: 5000, mana: 120 },
+        S: { exp: 10000, gold: 20000, mana: 250 },
+      }[rank];
+
+      for (let i = 1; i <= 3; i++) {
+        await fetch('/api/quests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: crypto.randomUUID(),
+            title: `${rank}-Rank Task ${i}: ${rank} Study Session`,
+            description: `Complete the ${rank}-rank academic goal. This mission is critical for ${rank}-rank hunters.`,
+            difficulty: rank,
+            expReward: baseRewards.exp * i,
+            goldReward: baseRewards.gold * (i + 1),
+            manaCost: baseRewards.mana,
+            status: 'available',
+            type: 'manual',
+            category: 'Academic'
+          })
+        });
+      }
+    }
+    fetchQuests();
+    addLog('[SYSTEM] POPULATED NEW MISSIONS ACROSS ALL RANKS', 'success');
+  };
+
+  const handleCreateQuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQuestTitle.trim()) return;
+
+    const baseRewards = {
+      E: { exp: 50, gold: 100, mana: 10 },
+      D: { exp: 150, gold: 300, mana: 25 },
+      C: { exp: 400, gold: 800, mana: 50 },
+      B: { exp: 1000, gold: 2000, mana: 80 },
+      A: { exp: 3000, gold: 5000, mana: 120 },
+      S: { exp: 10000, gold: 20000, mana: 250 },
+      National: { exp: 50000, gold: 100000, mana: 500 },
+      EX: { exp: 500000, gold: 1000000, mana: 2000 }
+    }[newQuestDifficulty] || { exp: 50, gold: 100, mana: 10 };
+
+    const questData = {
+      id: crypto.randomUUID(),
+      title: newQuestTitle,
+      description: `Target: ${newQuestTitle}. Complete the academic objective to earn rewards.`,
+      difficulty: newQuestDifficulty,
+      expReward: baseRewards.exp,
+      goldReward: baseRewards.gold,
+      manaCost: baseRewards.mana,
+      status: 'available',
+      type: 'manual',
+      category: 'Academic'
+    };
+
+    await fetch('/api/quests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(questData)
+    });
+    setNewQuestTitle('');
+    setIsCreating(false);
+    fetchQuests();
+    addLog(`[SYSTEM] NEW ACADEMIC QUEST REGISTERED: ${newQuestTitle}`, 'info');
+  };
+
+  return (
+    <div className="h-full overflow-y-auto space-y-12 pr-2">
+      {/* Main Quest Board Section */}
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <LegendaryTitle className="text-2xl">Academic Quest Board</LegendaryTitle>
+            <p className="text-[10px] font-mono text-neutral-500 uppercase">Available academic challenges and research missions</p>
+          </div>
+          <SystemButton onClick={() => setIsCreating(true)} className="flex items-center gap-2">
+            <Plus size={14} />
+            Register New Mission
+          </SystemButton>
+          <SystemButton onClick={populateAllRanks} className="flex items-center gap-2 bg-system-purple/10 border-system-purple/30 text-system-purple">
+            <Target size={14} />
+            Populate All Ranks
+          </SystemButton>
+          <SystemButton onClick={async () => {
+            await fetch('/api/quests', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: crypto.randomUUID(),
+                title: 'Calculus Mastery',
+                description: 'Solve the provided calculus problems set.',
+                difficulty: 'E',
+                expReward: 50,
+                goldReward: 100,
+                manaCost: 10,
+                status: 'available',
+                type: 'manual',
+                category: 'Academic'
+              })
+            });
+            fetchQuests();
+            addLog('[SYSTEM] SAMPLE QUEST ADDED', 'info');
+          }} className="flex items-center gap-2 bg-system-gold/10 border-system-gold/30 text-system-gold">
+            <Zap size={14} />
+            Quick Academic Task
+          </SystemButton>
+        </div>
+
+        {isCreating && (
+          <SystemCard className="animate-in fade-in slide-in-from-top-4">
+            <form onSubmit={handleCreateQuest} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-black text-neutral-500">Mission Objective</label>
+                  <input 
+                    value={newQuestTitle}
+                    onChange={e => setNewQuestTitle(e.target.value)}
+                    placeholder="E.g., Clear Calculus Midterm"
+                    className="w-full bg-black/40 border border-white/10 rounded p-3 text-sm font-mono text-white focus:border-system-purple outline-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-black text-neutral-500">Target Difficulty</label>
+                  <select 
+                    value={newQuestDifficulty}
+                    onChange={e => setNewQuestDifficulty(e.target.value as Rank)}
+                    className="w-full bg-black/40 border border-white/10 rounded p-3 text-sm font-mono text-white focus:border-system-purple outline-none appearance-none cursor-pointer"
+                  >
+                    {['E', 'D', 'C', 'B', 'A', 'S', 'National', 'EX'].map(r => (
+                      <option key={r} value={r}>{r}-Rank</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <SystemButton type="button" onClick={() => setIsCreating(false)} className="text-red-500/70 border-red-500/20 hover:bg-red-500/10">Cancel</SystemButton>
+                <SystemButton 
+                  type="button" 
+                  onClick={generateAIQuest} 
+                  disabled={isGenerating || !newQuestTitle}
+                  className="border-system-cyan/50 bg-system-cyan/10 text-system-cyan"
+                >
+                  {isGenerating ? 'Designing...' : 'AI Generate Dungeon'}
+                </SystemButton>
+                <SystemButton type="submit" disabled={isGenerating || !newQuestTitle} className="border-system-purple/50 bg-system-purple/10">Confirm Registration</SystemButton>
+              </div>
+            </form>
+          </SystemCard>
+        )}
+
+        <div className="space-y-12">
+          {['S', 'A', 'B', 'C', 'D', 'E'].map(rank => {
+            const rankQuests = quests.filter(q => q.difficulty === rank);
+            if (rankQuests.length === 0) return null;
+
+            return (
+              <section key={rank} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-bold text-white uppercase italic">{rank}-Rank Quests</h3>
+                  <div className="flex-1 h-[1px] bg-white/10" />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+                  {rankQuests.map((quest) => (
+                    <SystemCard 
+                      key={quest.id} 
+                      className={cn(
+                        "group border-white/5 hover:border-system-purple/30 transition-all duration-500",
+                        quest.status === 'active' && "border-system-cyan/40 bg-system-cyan/5",
+                        quest.status === 'completed' && "opacity-50 grayscale"
+                      )}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <RankBadge rank={quest.difficulty} size="sm" />
+                        <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-500">
+                          <Zap size={10} className="text-system-cyan" />
+                          {quest.manaCost} MP
+                        </div>
+                      </div>
+                      
+                      <h3 className="text-lg font-black text-white italic transition-colors group-hover:text-system-purple uppercase leading-tight mb-2">
+                        {quest.title}
+                      </h3>
+                      
+                      <p className="text-[10px] font-mono text-neutral-500 line-clamp-2 mb-4 leading-relaxed">
+                        {quest.description}
+                      </p>
+
+                      <div className="flex items-center gap-4 text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-6 border-t border-white/5 pt-4">
+                        <span className="flex items-center gap-1"><Clock size={10} /> REWARD: {quest.expReward} EXP</span>
+                        <span className="flex items-center gap-1 text-system-gold"><Target size={10} /> {quest.goldReward}G</span>
+                      </div>
+
+                      {quest.status === 'available' && (
+                        <SystemButton onClick={() => startQuest(quest)} className="w-full">
+                          Enter Gate
+                        </SystemButton>
+                      )}
+                      
+                      {quest.status === 'active' && (
+                        <div className="flex gap-2">
+                          <SystemButton onClick={() => completeQuest(quest)} className="flex-1 bg-system-cyan/20 border-system-cyan/50 text-system-cyan hover:bg-system-cyan/30">
+                            Complete Mission
+                          </SystemButton>
+                        </div>
+                      )}
+
+                      {quest.status === 'completed' && (
+                        <div className="text-center py-2 text-[10px] font-black uppercase text-system-cyan tracking-[0.2em] italic">
+                          Quest Cleared
+                        </div>
+                      )}
+                    </SystemCard>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
