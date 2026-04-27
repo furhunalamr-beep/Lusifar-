@@ -9,7 +9,7 @@ const questions = [
   { id: 3, question: 'Which of these is a prime number?', options: ['4', '6', '8', '7'], correct: 3 },
 ];
 
-export const QuizTaking = ({ onExit }: { onExit: () => void }) => {
+export const QuizTaking = ({ onExit }: { onExit: (data: { score: number, total: number }) => void }) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
@@ -33,10 +33,10 @@ export const QuizTaking = ({ onExit }: { onExit: () => void }) => {
 
   if (finished) {
     return (
-      <div className="bg-black/40 border border-system-purple/30 p-12 text-center text-white space-y-8 animate-in zoom-in duration-500">
+      <div className="bg-black/40 border border-system-cyan/30 p-12 text-center text-white space-y-8 animate-in zoom-in duration-500">
         <h2 className="text-4xl font-black italic uppercase tracking-tighter">Quiz Complete</h2>
         <p className="text-xl">Your Score: {score} / {questions.length}</p>
-        <SystemButton onClick={onExit} className="px-12 py-4 bg-system-purple/20">
+        <SystemButton onClick={() => onExit({ score, total: questions.length })} className="px-12 py-4 bg-system-cyan/20">
           EXIT
         </SystemButton>
       </div>

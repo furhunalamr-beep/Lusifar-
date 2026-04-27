@@ -52,6 +52,10 @@ db.exec(`
     max_mana INTEGER DEFAULT 100,
     gold INTEGER DEFAULT 0,
     rank TEXT DEFAULT 'E',
+    hunter_class TEXT DEFAULT 'UNRANKED',
+    email TEXT,
+    password TEXT,
+    mac_account TEXT,
     str INTEGER DEFAULT 10,
     int INTEGER DEFAULT 10,
     per INTEGER DEFAULT 10,
@@ -162,27 +166,30 @@ db.exec(`
     type TEXT,
     data_url TEXT
   );
-
-  -- Initial Quests
-  INSERT OR IGNORE INTO quests (id, title, description, difficulty, exp_reward, gold_reward, mana_cost, type, category) 
-  VALUES 
-  ('q1', 'Shadow Extraction 101', 'Summon your first shadow by uploading a document to the system.', 'E', 50, 100, 5, 'manual', 'Tutorial'),
-  ('q2', 'Daily Training', '100 Push-ups, 100 Sit-ups, 100 Squats, and 10km Running.', 'D', 1500, 500, 0, 'manual', 'Daily'),
-  ('q3', 'Red Gate Raid', 'Clear a high-level dungeon and extract the boss shadow.', 'B', 8000, 15000, 80, 'manual', 'Raid'),
-  ('q4', 'Demon Castle', 'Infiltrate the 100th floor and defeat the Monarch of White Flames.', 'S', 500000, 1000000, 250, 'manual', 'Legacy'),
-  ('q5', 'Architect Trial', 'Survival quest: survive for 10 minutes in the double dungeon.', 'S', 100000, 50000, 500, 'manual', 'Secret'),
-  ('q6', 'Jeju Island', 'Exterminate the evolved ant colonies and the Ant King.', 'S', 2000000, 5000000, 1000, 'manual', 'Legendary'),
-  ('q7', 'Monarch of Destruction', 'Face the Antares, the Monarch of Destruction, in the rift world.', 'EX', 10000000, 25000000, 5000, 'manual', 'Godly'),
-  ('q8', 'Absolute Being Challenge', 'Reach the limits of the system and face the Architect again.', 'EX', 50000000, 100000000, 10000, 'manual', 'Endgame');
-
-  -- Educational Missions
-  INSERT OR IGNORE INTO quests (id, title, description, difficulty, exp_reward, gold_reward, mana_cost, type, category) 
-  VALUES 
-  ('edu1', 'Quantum Mechanics 101', 'Complete the introductory module on quantum states.', 'E', 100, 200, 10, 'academic', 'Educational'),
-  ('edu2', 'String Theory Review', 'Analyze the proposed multi-dimensional frameworks.', 'D', 500, 1000, 20, 'academic', 'Educational'),
-  ('edu3', 'Neural Network Foundations', 'Successfully train a basic perceptron model.', 'C', 1000, 2000, 30, 'academic', 'Educational');
-
 `);
+
+  // Clear and Re-insert Study-Focused Quests
+  db.exec(`
+    DELETE FROM quests;
+    
+    INSERT INTO quests (id, title, description, difficulty, exp_reward, gold_reward, mana_cost, type, category) 
+    VALUES 
+    ('q_tutorial', 'System Initialization', 'Complete your basic profile and set your study goals.', 'E', 100, 200, 0, 'manual', 'Tutorial'),
+    ('q_daily_study', 'Daily Study Quest', 'Achieve 3 hours of focused study time in the Focus Chamber.', 'D', 2000, 500, 0, 'manual', 'Daily'),
+    ('q_exam_prep', 'Mock Exam Raid: Calculus', 'Complete the mock exam with a score above 80%.', 'B', 8000, 15000, 50, 'academic', 'Exam Prep'),
+    ('q_chapter_mastery', 'Path to Mastery', 'Successfully master 1 full chapter in the Syllabus Map.', 'C', 3000, 5000, 30, 'manual', 'Study'),
+    ('q_research', 'Library Infiltration', 'Spend 2 uninterrupted hours in the Library (Focus Mode).', 'C', 1500, 2000, 0, 'manual', 'Focus'),
+    ('q_thesis', 'Monarch''s Thesis', 'Complete a major research project and present your findings.', 'S', 50000, 100000, 200, 'manual', 'Legendary'),
+    ('q_s_rank_exam', 'S-Rank Board Exam', 'The final hurdle: pass the National Level Professional Exam.', 'S', 200000, 500000, 500, 'manual', 'Endgame'),
+    ('q_flashcard_king', 'Daily Recitation', 'Clear 50 flashcards in the Training Grounds without error.', 'D', 1000, 800, 10, 'manual', 'Daily');
+
+    -- Advanced Educational Missions
+    INSERT INTO quests (id, title, description, difficulty, exp_reward, gold_reward, mana_cost, type, category) 
+    VALUES 
+    ('edu_1', 'Organic Chemistry Bonds', 'Complete the lesson on Covalent and Ionic bonding mechanisms.', 'D', 800, 1200, 20, 'academic', 'Study'),
+    ('edu_2', 'Macroeconomics Flux', 'Analyze the impact of interest rates on the national GDP.', 'B', 2500, 4000, 40, 'academic', 'Exam Prep'),
+    ('edu_3', 'Advanced Data Structures', 'Implement a Balanced Binary Search Tree and analyze complexity.', 'A', 6000, 8000, 60, 'academic', 'Study');
+  `);
 
 // Migrations for existing databases
 try {
@@ -206,6 +213,22 @@ try {
 
 try {
   db.exec("ALTER TABLE stats ADD COLUMN profile_pic TEXT");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE stats ADD COLUMN email TEXT");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE stats ADD COLUMN password TEXT");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE stats ADD COLUMN mac_account TEXT");
+} catch (e) {}
+
+try {
+  db.exec("ALTER TABLE stats ADD COLUMN hunter_class TEXT DEFAULT 'UNRANKED'");
 } catch (e) {}
 
 try {
@@ -256,6 +279,17 @@ try {
       quantity INTEGER DEFAULT 1,
       type TEXT,
       rarity TEXT
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      message TEXT,
+      type TEXT,
+      read INTEGER DEFAULT 0,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
   
@@ -486,6 +520,7 @@ async function startServer() {
       const stats = db.prepare(`
         SELECT name, title, profile_pic as profilePic, level, exp, max_exp as maxExp, hp, max_hp as maxHp, 
                mana, max_mana as maxMana, fatigue, max_fatigue as maxFatigue, gold, rank, 
+               hunter_class as hunterClass, email, password, mac_account as macAccount,
                str, int, per, vit, agi, knowledge_points as knowledgePoints,
                onboarded, study_hours as studyHours, chapters_mastered as chaptersMastered,
                quizzes_taken as quizzesTaken, average_score as averageScore
@@ -503,15 +538,16 @@ async function startServer() {
 
   app.post('/api/stats/update', (req, res) => {
     try {
-      const { name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, str, int, per, vit, agi, knowledgePoints, onboarded, studyHours, chaptersMastered, quizzesTaken, averageScore } = req.body;
+      const { name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, hunterClass, email, password, macAccount, str, int, per, vit, agi, knowledgePoints, onboarded, studyHours, chaptersMastered, quizzesTaken, averageScore } = req.body;
       const stmt = db.prepare(`
         UPDATE stats SET 
           name = ?, title = ?, profile_pic = ?, level = ?, exp = ?, max_exp = ?, hp = ?, max_hp = ?, 
           mana = ?, max_mana = ?, fatigue = ?, max_fatigue = ?, gold = ?, rank = ?, 
+          hunter_class = ?, email = ?, password = ?, mac_account = ?,
           str = ?, int = ?, per = ?, vit = ?, agi = ?, knowledge_points = ?,
           onboarded = ?, study_hours = ?, chapters_mastered = ?, quizzes_taken = ?, average_score = ?
         WHERE id = 1
-      `).run(name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, str, int, per, vit, agi, knowledgePoints, onboarded ? 1 : 0, studyHours, chaptersMastered, quizzesTaken, averageScore);
+      `).run(name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, hunterClass, email, password, macAccount, str, int, per, vit, agi, knowledgePoints, onboarded ? 1 : 0, studyHours, chaptersMastered, quizzesTaken, averageScore);
       res.json({ success: true });
     } catch (e: any) {
       console.error("[SERVER] Update Stats Error:", e);
@@ -685,6 +721,84 @@ async function startServer() {
     const { id, message, type } = req.body;
     db.prepare('INSERT INTO logs (id, message, type) VALUES (?, ?, ?)').run(id, message, type);
     res.json({ success: true });
+  });
+
+  // Notifications API
+  app.get('/api/notifications', (req, res) => {
+    try {
+      const logs = db.prepare('SELECT * FROM notifications ORDER BY timestamp DESC LIMIT 20').all();
+      res.json(logs.map((l: any) => ({ ...l, read: !!l.read })));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/notifications/read', (req, res) => {
+    try {
+      db.prepare('UPDATE notifications SET read = 1 WHERE id = ?').run(req.body.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/notifications/clear', (req, res) => {
+    try {
+      db.prepare('DELETE FROM notifications WHERE read = 1').run();
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Advanced Logic: Reward Processing
+  app.post('/api/claim-reward', (req, res) => {
+    try {
+      const { exp, gold, title, notification } = req.body;
+      
+      const stats = db.prepare('SELECT * FROM stats WHERE id = 1').get() as any;
+      
+      let newExp = stats.exp + exp;
+      let newLevel = stats.level;
+      let newMaxExp = stats.max_exp;
+      let leveledUp = false;
+
+      while (newExp >= newMaxExp) {
+        newExp -= newMaxExp;
+        newLevel++;
+        newMaxExp = Math.floor(newMaxExp * 1.5);
+        leveledUp = true;
+      }
+
+      db.prepare(`
+        UPDATE stats SET 
+          exp = ?, level = ?, max_exp = ?, gold = gold + ?
+        WHERE id = 1
+      `).run(newExp, newLevel, newMaxExp, gold);
+
+      if (leveledUp) {
+        const notifId = Math.random().toString(36).substring(2, 11);
+        db.prepare('INSERT INTO notifications (id, title, message, type) VALUES (?, ?, ?, ?)')
+          .run(notifId, 'LEVEL UP!', `Congratulation! You have reached Level ${newLevel}. Strength and Agility have increased.`, 'achievement');
+      }
+
+      if (notification) {
+        const notifId = Math.random().toString(36).substring(2, 11);
+        db.prepare('INSERT INTO notifications (id, title, message, type) VALUES (?, ?, ?, ?)')
+          .run(notifId, notification.title, notification.message, notification.type || 'info');
+      }
+
+      res.json({ 
+        success: true, 
+        leveledUp, 
+        newLevel, 
+        newExp, 
+        newMaxExp,
+        goldGained: gold
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Vite Integration

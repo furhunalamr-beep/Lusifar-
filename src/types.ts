@@ -27,6 +27,10 @@ export interface HunterStats {
   maxFatigue: number;
   onboarded?: boolean;
   knowledgePoints: number;
+  hunterClass?: string;
+  email?: string;
+  password?: string;
+  macAccount?: string;
   // Study Specific Stats
   studyHours: number;
   chaptersMastered: number;
@@ -133,4 +137,13 @@ export interface InventoryItem {
   quantity: number;
   type: 'consumable' | 'material' | 'equipment' | 'currency';
   rarity: Rank;
+}
+
+export interface SystemNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'alert' | 'achievement' | 'system';
+  read: boolean;
+  timestamp: string;
 }

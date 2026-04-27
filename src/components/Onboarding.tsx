@@ -12,9 +12,16 @@ import { motion } from 'motion/react';
 export const Onboarding = () => {
   const { updateStats, addLog } = useSystem();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [macAccount, setMacAccount] = useState('');
+  const [hunterClass, setHunterClass] = useState('Warrior');
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hunterClasses = ['Warrior', 'Mage', 'Assassin', 'Healer', 'Tank', 'Ranger'];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -29,15 +36,19 @@ export const Onboarding = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !username.trim()) return;
 
     setIsSubmitting(true);
     try {
       await updateStats({
         name: name.trim(),
+        title: `Novice ${hunterClass}`,
+        hunterClass: hunterClass,
+        email: email.trim(),
+        password: password, // In real app, hash this
+        macAccount: macAccount.trim(),
         profilePic: profilePic || undefined,
         onboarded: true,
-        // Reset basic stats for new user if they were dummy data
         level: 1,
         exp: 0,
         maxExp: 100,
@@ -52,10 +63,9 @@ export const Onboarding = () => {
         per: 10,
         vit: 10,
         agi: 10,
-        knowledgePoints: 0,
-        title: 'New Hunter'
+        knowledgePoints: 0
       });
-      await addLog(`[SYSTEM] WELCOME, HUNTER ${name.toUpperCase()}. INITIALIZING PROTOCOL.`, 'info');
+      await addLog(`[SYSTEM] WELCOME, ${username.toUpperCase()}. INITIALIZING ${hunterClass.toUpperCase()} PROTOCOL.`, 'info');
     } catch (error) {
       console.error(error);
     } finally {
@@ -108,24 +118,81 @@ export const Onboarding = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">Hunter Name</label>
-              <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 group-focus-within:text-system-cyan transition-colors" size={18} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[40vh] overflow-y-auto px-2 custom-scrollbar">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest px-1">Full Name</label>
                 <input 
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name..."
-                  className="w-full bg-black/50 border border-white/5 focus:border-system-cyan focus:outline-none transition-all py-4 pl-12 pr-4 text-white font-mono placeholder:text-neutral-700"
+                  placeholder="Real Name"
+                  className="w-full bg-black/50 border border-white/5 focus:border-system-cyan focus:outline-none transition-all p-3 text-white font-mono placeholder:text-neutral-700 text-xs"
                   required
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest px-1">Global Username</label>
+                <input 
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="System ID"
+                  className="w-full bg-black/50 border border-white/5 focus:border-system-cyan focus:outline-none transition-all p-3 text-white font-mono placeholder:text-neutral-700 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest px-1">Gmail Account</label>
+                <input 
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="example@gmail.com"
+                  className="w-full bg-black/50 border border-white/5 focus:border-system-cyan focus:outline-none transition-all p-3 text-white font-mono placeholder:text-neutral-700 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest px-1">System Password</label>
+                <input 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-black/50 border border-white/5 focus:border-system-cyan focus:outline-none transition-all p-3 text-white font-mono placeholder:text-neutral-700 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest px-1">MAC/Device Account</label>
+                <input 
+                  type="text"
+                  value={macAccount}
+                  onChange={(e) => setMacAccount(e.target.value)}
+                  placeholder="Identifier"
+                  className="w-full bg-black/50 border border-white/5 focus:border-system-cyan focus:outline-none transition-all p-3 text-white font-mono placeholder:text-neutral-700 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest px-1">Hunter Class</label>
+                <select 
+                  value={hunterClass}
+                  onChange={(e) => setHunterClass(e.target.value)}
+                  className="w-full bg-black/50 border border-white/5 focus:border-system-cyan focus:outline-none transition-all p-3 text-white font-mono text-xs appearance-none cursor-pointer"
+                >
+                  {hunterClasses.map(c => <option key={c} value={c} className="bg-neutral-900">{c}</option>)}
+                </select>
               </div>
             </div>
 
             <SystemButton 
               type="submit" 
-              disabled={isSubmitting || !name.trim()} 
+              disabled={isSubmitting || !name.trim() || !username.trim() || !password.trim()} 
               className="w-full py-4 text-sm tracking-[0.4em]"
             >
               <div className="flex items-center justify-center gap-2">
@@ -135,8 +202,8 @@ export const Onboarding = () => {
             </SystemButton>
           </form>
 
-          <p className="text-[8px] font-mono text-neutral-700 text-center uppercase tracking-widest">
-            By initializing, you accept the system's absolute authority and the consequences of the double dungeon.
+          <p className="text-[8px] font-mono text-neutral-700 text-center uppercase tracking-widest leading-relaxed">
+            By initializing, you commit to academic excellence, the pursuit of total knowledge, and the discipline of a Monarch Scholar.
           </p>
         </SystemCard>
       </motion.div>

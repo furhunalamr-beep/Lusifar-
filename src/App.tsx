@@ -27,13 +27,17 @@ import * as SystemUI from './components/SystemUI';
 import { StripeShop } from './components/StripeShop';
 import { VoiceCommandPage } from './components/VoiceCommandPage';
 import { ChallengeBoard } from './components/ChallengeBoard';
+import { NotificationOverlay } from './components/NotificationOverlay';
 
 import { StatBar, RankBadge, SystemCard } from './components/SystemUI';
 import { ChatInterface } from './components/ChatInterface';
 
 export default function App() {
   const [showIntro, setShowIntro] = React.useState(true);
-  const { activeTab, stats, logs } = useSystem();
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const { activeTab, stats, logs, notifications } = useSystem();
+  
+  const unreadNotifications = notifications.filter(n => !n.read).length;
   
   React.useEffect(() => {
     // Other startup logic can go here
@@ -75,22 +79,52 @@ export default function App() {
       <BottomNavigation />
 
       {/* Main Content Area - Game World Perspective */}
-      <main className="flex-1 flex flex-col min-w-0 min-h-0 relative z-10 p-4">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 relative z-10 p-2 md:p-4">
         
-        {/* HUD */}
-        <div className="flex flex-col gap-2 mb-4 pointer-events-none">
-          <div className="bg-black/80 border border-system-cyan p-2 rounded flex items-center gap-3">
-             <div className="text-system-cyan font-black text-sm italic uppercase font-sans">LVL {stats.level}</div>
-             <div className="text-white text-[10px] opacity-70 border-l border-white/20 pl-2">RANK: {stats.rank}</div>
+        {/* HUD Top Bar */}
+        <div className="flex items-start justify-between mb-2 md:mb-4">
+          <div className="flex flex-col gap-2 pointer-events-none">
+            <div className="bg-black/60 backdrop-blur-md border-l-4 border-system-cyan p-2 px-4 rounded-r flex items-center gap-4 shadow-[0_0_20px_rgba(0,242,255,0.1)]">
+              <div className="flex flex-col">
+                <div className="text-system-cyan font-black text-sm italic uppercase font-sans flex items-center gap-2">
+                  <Zap size={14} className="fill-system-cyan" />
+                  LEVEL {stats.level}
+                </div>
+                <div className="text-[8px] font-mono text-neutral-400 uppercase tracking-tighter">Monarch Evolution Path</div>
+              </div>
+              <div className="h-8 w-px bg-white/10" />
+              <div className="flex flex-col">
+                <div className="text-white text-[10px] font-bold uppercase tracking-widest">{stats.rank}-RANK</div>
+                <div className="text-[8px] font-mono text-system-blue uppercase tracking-widest">CLASS: {stats.hunterClass || 'HUNTER'}</div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-1 pointer-events-auto">
+                <div className="w-48 bg-black/40 backdrop-blur-sm border border-red-500/20 p-1 rounded-sm">
+                  <StatBar label="HP" current={stats.hp} max={stats.maxHp} colorClass="bg-red-500" />
+                </div>
+                <div className="w-48 bg-black/40 backdrop-blur-sm border border-blue-500/20 p-1 rounded-sm">
+                  <StatBar label="MP" current={stats.mana} max={stats.maxMana} colorClass="bg-blue-500" />
+                </div>
+            </div>
           </div>
-          
-          <div className="flex flex-col gap-1 pointer-events-auto">
-              <div className="w-32 bg-black/80 border border-red-900 p-1 rounded">
-                <StatBar label="HP" current={stats.hp} max={stats.maxHp} colorClass="bg-red-600" />
-              </div>
-              <div className="w-32 bg-black/80 border border-blue-900 p-1 rounded">
-                <StatBar label="MP" current={stats.mana} max={stats.maxMana} colorClass="bg-blue-600" />
-              </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowNotifications(true)}
+              className="relative p-3 bg-black/40 border border-white/5 rounded-full hover:border-system-cyan/50 transition-all group"
+            >
+              <Bell size={20} className="text-neutral-400 group-hover:text-system-cyan transition-colors" />
+              {unreadNotifications > 0 && (
+                <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 border-2 border-black rounded-full flex items-center justify-center text-[10px] font-black text-white animate-pulse">
+                  {unreadNotifications}
+                </span>
+              )}
+            </button>
+            <div className="hidden md:flex flex-col items-end">
+               <div className="text-xs font-black text-white italic uppercase tracking-[0.2em]">{stats.name}</div>
+               <div className="text-[10px] font-mono text-system-gold">{stats.gold.toLocaleString()} GOLD</div>
+            </div>
           </div>
         </div>
         
@@ -124,6 +158,7 @@ export default function App() {
       </aside>
 
       <ChatInterface />
+      <NotificationOverlay isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
     </div>
   );
 }

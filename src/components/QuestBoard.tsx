@@ -13,12 +13,12 @@ import { cn } from '../lib/utils';
 import { GoogleGenAI } from "@google/genai";
 
 export const QuestBoard = () => {
-  const { quests, fetchQuests, addLog, updateStats, stats, gainExp, logQuestProgress } = useSystem();
+  const { quests, fetchQuests, addLog, updateStats, stats, gainExp, claimReward, logQuestProgress } = useSystem();
   const [isCreating, setIsCreating] = useState(false);
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [newQuestDifficulty, setNewQuestDifficulty] = useState<Rank>('E');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'All' | 'Academic' | 'Daily'>('All');
+  const [activeCategory, setActiveCategory] = useState<string>('All');
   const [newNotes, setNewNotes] = useState<Record<string, string>>({});
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
@@ -98,12 +98,17 @@ export const QuestBoard = () => {
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
       }
+      
       const expReward = Number(quest.expReward) || 0;
       const goldReward = Number(quest.goldReward) || 0;
-      await gainExp(expReward);
-      await updateStats({ gold: stats.gold + goldReward });
+      
+      await claimReward(expReward, goldReward, {
+        title: 'QUEST CLEARED',
+        message: `You successfully completed "${quest.title}". Rewards have been processed.`,
+        type: 'success'
+      });
+
       fetchQuests();
-      addLog(`[SYSTEM] ACADEMIC QUEST CLEARED: ${quest.title}. REWARDS COLLECTED.`, 'success');
     } catch (error) {
       console.error("Error completing quest:", error);
       addLog(`[SYSTEM] ERROR COMPLETING QUEST: ${error instanceof Error ? error.message : 'Unknown error'}`, 'alert');
@@ -238,11 +243,11 @@ export const QuestBoard = () => {
             <p className="text-[10px] font-mono text-neutral-500 uppercase">Available academic challenges and research missions</p>
           </div>
           <div className="flex gap-2">
-            {(['All', 'Academic', 'Daily'] as const).map(cat => (
+            {['All', 'Daily', 'Study', 'Exam Prep', 'Focus'].map(cat => (
               <SystemButton 
                 key={cat} 
                 onClick={() => setActiveCategory(cat)} 
-                className={cn("text-xs", activeCategory === cat ? "bg-system-purple/20 border-system-purple/50" : "bg-transparent border-white/10")}
+                className={cn("text-xs", activeCategory === cat ? "bg-system-cyan/20 border-system-cyan/50 text-system-cyan" : "bg-transparent border-white/10")}
               >
                 {cat}
               </SystemButton>
@@ -253,11 +258,11 @@ export const QuestBoard = () => {
               <Plus size={14} />
               Register New Mission
             </SystemButton>
-            <SystemButton onClick={populateAllRanks} className="flex items-center gap-2 bg-system-purple/10 border-system-purple/30 text-system-purple">
+            <SystemButton onClick={populateAllRanks} className="flex items-center gap-2 bg-system-blue/10 border-system-blue/30 text-system-blue">
               <Target size={14} />
               Populate All Ranks
             </SystemButton>
-            <SystemButton onClick={populateMassMissions} className="flex items-center gap-2 bg-system-blue/10 border-system-blue/30 text-system-blue">
+            <SystemButton onClick={populateMassMissions} className="flex items-center gap-2 bg-system-cyan/10 border-system-cyan/30 text-system-cyan">
               <Target size={14} />
               Populate Mass Missions
             </SystemButton>
@@ -274,7 +279,7 @@ export const QuestBoard = () => {
                     value={newQuestTitle}
                     onChange={e => setNewQuestTitle(e.target.value)}
                     placeholder="E.g., Clear Calculus Midterm"
-                    className="w-full bg-black/40 border border-white/10 rounded p-3 text-sm font-mono text-white focus:border-system-purple outline-none"
+                    className="w-full bg-black/40 border border-white/10 rounded p-3 text-sm font-mono text-white focus:border-system-cyan outline-none"
                   />
                 </div>
                 <div className="space-y-2">
@@ -282,7 +287,7 @@ export const QuestBoard = () => {
                   <select 
                     value={newQuestDifficulty}
                     onChange={e => setNewQuestDifficulty(e.target.value as Rank)}
-                    className="w-full bg-black/40 border border-white/10 rounded p-3 text-sm font-mono text-white focus:border-system-purple outline-none appearance-none cursor-pointer"
+                    className="w-full bg-black/40 border border-white/10 rounded p-3 text-sm font-mono text-white focus:border-system-cyan outline-none appearance-none cursor-pointer"
                   >
                     {['E', 'D', 'C', 'B', 'A', 'S', 'National', 'EX'].map(r => (
                       <option key={r} value={r}>{r}-Rank</option>
@@ -300,7 +305,7 @@ export const QuestBoard = () => {
                 >
                   {isGenerating ? 'Designing...' : 'AI Generate Dungeon'}
                 </SystemButton>
-                <SystemButton type="submit" disabled={isGenerating || !newQuestTitle} className="border-system-purple/50 bg-system-purple/10">Confirm Registration</SystemButton>
+                <SystemButton type="submit" disabled={isGenerating || !newQuestTitle} className="border-system-cyan/50 bg-system-cyan/10">Confirm Registration</SystemButton>
               </div>
             </form>
           </SystemCard>
@@ -322,7 +327,7 @@ export const QuestBoard = () => {
                     <SystemCard 
                       key={quest.id} 
                       className={cn(
-                        "group border-white/5 hover:border-system-purple/30 transition-all duration-500",
+                        "group border-white/5 hover:border-system-cyan/30 transition-all duration-500",
                         quest.status === 'active' && "border-system-cyan/40 bg-system-cyan/5",
                         quest.status === 'completed' && "opacity-50 grayscale"
                       )}
@@ -335,7 +340,7 @@ export const QuestBoard = () => {
                         </div>
                       </div>
                       
-                      <h3 className="text-lg font-black text-white italic transition-colors group-hover:text-system-purple uppercase leading-tight mb-2">
+                      <h3 className="text-lg font-black text-white italic transition-colors group-hover:text-system-cyan uppercase leading-tight mb-2">
                         {quest.title}
                       </h3>
                       

@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { HunterStats, Quest, Shadow, SystemLog, InventoryItem, Rank, SyllabusChapter, StudyNote } from '../types';
+import { HunterStats, Quest, Shadow, SystemLog, InventoryItem, Rank, SyllabusChapter, StudyNote, SystemNotification } from '../types';
 
 interface SystemContextType {
   stats: HunterStats;
@@ -16,6 +16,7 @@ interface SystemContextType {
   logs: SystemLog[];
   inventory: InventoryItem[];
   shadows: Shadow[];
+  notifications: SystemNotification[];
   activeTab: string;
   activeShadowId: string | null;
   setActiveShadowId: (id: string | null) => void;
@@ -29,7 +30,11 @@ interface SystemContextType {
   upgradeSkill: (id: string) => Promise<void>;
   fetchLeaderboard: () => Promise<void>;
   fetchInventory: () => Promise<void>;
+  fetchNotifications: () => Promise<void>;
   gainExp: (amount: number) => void;
+  claimReward: (exp: number, gold: number, notification?: { title: string, message: string, type?: string }) => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
+  clearReadNotifications: () => Promise<void>;
   updateDailyTask: (task: string) => void;
   logQuestProgress: (questId: string, note: string) => Promise<void>;
   dailyTraining: any;
@@ -55,9 +60,9 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     title: 'Shadow Monarch',
     level: 20, exp: 450, maxExp: 1000, hp: 4500, maxHp: 4500, mana: 800, maxMana: 1200,
     fatigue: 0, maxFatigue: 100,
-    gold: 50000, rank: 'S', str: 84, int: 50, per: 65, vit: 70, agi: 92, knowledgePoints: 5,
-    onboarded: true,
-    studyHours: 124, chaptersMastered: 8, quizzesTaken: 25, averageScore: 88
+    gold: 0, rank: 'E', str: 10, int: 10, per: 10, vit: 10, agi: 10, knowledgePoints: 0,
+    onboarded: false,
+    studyHours: 0, chaptersMastered: 0, quizzesTaken: 0, averageScore: 0
   });
   const [quests, setQuests] = useState<Quest[]>([]);
   const [chapters, setChapters] = useState<SyllabusChapter[]>([]);
@@ -67,6 +72,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [shadows, setShadows] = useState<Shadow[]>([]);
+  const [notifications, setNotifications] = useState<SystemNotification[]>([]);
   const [activeTab, setActiveTab] = useState('status');
   const [activeShadowId, setActiveShadowId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -211,6 +217,13 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (e) { console.error(e); }
   }, []);
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications');
+      setNotifications(await res.json());
+    } catch (e) { console.error(e); }
+  }, []);
+
   const fetchLogs = useCallback(async () => {
     try {
       const res = await fetch('/api/logs');
@@ -245,7 +258,8 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fetchLeaderboard();
     fetchInventory();
     fetchLogs();
-  }, [fetchStats, fetchQuests, fetchChapters, fetchNotes, fetchSkills, fetchShadows, fetchLeaderboard, fetchInventory, fetchLogs]);
+    fetchNotifications();
+  }, [fetchStats, fetchQuests, fetchChapters, fetchNotes, fetchSkills, fetchShadows, fetchLeaderboard, fetchInventory, fetchLogs, fetchNotifications]);
 
   const updateStats = async (updates: Partial<HunterStats>) => {
     // Merge updates into our reactive state but also send it to the server.
@@ -281,36 +295,57 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   };
 
-  const gainExp = async (amount: number) => {
-    let leveledUp = false;
-    let nextLevel = 0;
-    
-    let newFullStats: HunterStats | undefined;
-    setStats(prev => {
-      nextLevel = prev.level;
-      let nextExp = prev.exp + amount;
-      let nextMaxExp = prev.maxExp;
-
-      while (nextExp >= nextMaxExp) {
-        leveledUp = true;
-        nextLevel++;
-        nextExp -= nextMaxExp;
-        nextMaxExp = Math.floor(nextMaxExp * 1.5);
-      }
-
-      newFullStats = { ...prev, level: nextLevel, exp: nextExp, maxExp: nextMaxExp };
-      return newFullStats;
-    });
-
-    if (newFullStats) {
-      if (leveledUp) addLog(`[SYSTEM] LEVEL UP! YOU ARE NOW LEVEL ${nextLevel}.`, 'level_up');
-      
-      await fetch('/api/stats/update', {
+  const claimReward = async (exp: number, gold: number, notification?: { title: string, message: string, type?: string }) => {
+    try {
+      const res = await fetch('/api/claim-reward', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newFullStats)
+        body: JSON.stringify({ exp, gold, notification })
       });
+      const result = await res.json();
+      
+      if (result.success) {
+        setStats(prev => ({
+          ...prev,
+          level: result.newLevel,
+          exp: result.newExp,
+          maxExp: result.newMaxExp,
+          gold: prev.gold + result.goldGained
+        }));
+        
+        if (result.leveledUp) {
+          addLog(`[SYSTEM] LEVEL UP! YOU ARE NOW LEVEL ${result.newLevel}.`, 'level_up');
+        }
+        
+        await fetchNotifications();
+        await addLog(`[REWARD] CLAIMED: ${exp} EXP, ${gold} GOLD.`, 'success');
+      }
+    } catch (e) {
+      console.error(e);
+      addLog(`[SYSTEM] FAILED TO CLAIM REWARD.`, 'alert');
     }
+  };
+
+  const markNotificationRead = async (id: string) => {
+    try {
+      await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      await fetchNotifications();
+    } catch (e) { console.error(e); }
+  };
+
+  const clearReadNotifications = async () => {
+    try {
+      await fetch('/api/notifications/clear', { method: 'POST' });
+      await fetchNotifications();
+    } catch (e) { console.error(e); }
+  };
+
+  const gainExp = async (amount: number) => {
+    await claimReward(amount, 0);
   };
 
   const updateDailyTask = async (task: string) => {
@@ -431,11 +466,11 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <SystemContext.Provider value={{ 
-      stats, quests, chapters, notes, skills, leaderboard, logs, inventory, shadows, activeTab, 
+      stats, quests, chapters, notes, skills, leaderboard, logs, inventory, shadows, notifications, activeTab, 
       activeShadowId, setActiveShadowId,
       setActiveTab,
       updateStats, addLog, fetchQuests, fetchChapters, fetchNotes, fetchSkills, upgradeSkill, 
-      fetchLeaderboard, fetchInventory, gainExp,
+      fetchLeaderboard, fetchInventory, fetchNotifications, gainExp, claimReward, markNotificationRead, clearReadNotifications,
       dailyTraining, updateDailyTask, logQuestProgress, summonShadow, buyItem, useItem, soundEnabled, toggleSound, isOnline
     }}>
       {children}

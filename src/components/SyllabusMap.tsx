@@ -11,7 +11,34 @@ import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
 export const SyllabusMap = () => {
-  const { chapters, stats, gainExp, addLog } = useSystem();
+  const { chapters, stats, claimReward, fetchChapters, addLog } = useSystem();
+  
+  const studyChapter = async (id: string) => {
+    const chapter = displayChapters.find(c => c.id === id);
+    if (!chapter || chapter.isLocked) return;
+
+    try {
+      const newMastery = Math.min(100, chapter.mastery + 10);
+      const res = await fetch('/api/chapters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...chapter, mastery: newMastery })
+      });
+
+      if (res.ok) {
+        await fetchChapters();
+        await claimReward(100, 50, {
+          title: 'CHAPTER STUDIED',
+          message: `Mastery of "${chapter.title}" increased to ${newMastery}%.`,
+          type: 'system'
+        });
+        
+        if (newMastery === 100) {
+            addLog(`[SYSTEM] CHAPTER FULLY MASTERED: ${chapter.title.toUpperCase()}`, 'success');
+        }
+      }
+    } catch (e) { console.error(e); }
+  };
   
   // Dummy data if none exists
   const displayChapters = chapters.length > 0 ? chapters : [
@@ -85,8 +112,23 @@ export const SyllabusMap = () => {
                     label="MASTERY" 
                     current={chapter.mastery} 
                     max={100} 
-                    colorClass={chapter.mastery >= 80 ? "bg-green-500" : chapter.mastery >= 40 ? "bg-system-cyan" : "bg-red-500"} 
+                    colorClass={chapter.mastery >= 80 ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" : chapter.mastery >= 40 ? "bg-system-cyan shadow-[0_0_10px_rgba(0,242,255,0.3)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]"} 
                   />
+                  {!chapter.isLocked && chapter.mastery < 100 && (
+                    <button 
+                      onClick={() => studyChapter(chapter.id)}
+                      className="w-full mt-2 py-1 bg-system-cyan/10 border border-system-cyan/30 text-[9px] font-black text-system-cyan uppercase italic hover:bg-system-cyan/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Zap size={10} />
+                      Intense Study Session
+                    </button>
+                  )}
+                  {chapter.mastery === 100 && (
+                    <div className="w-full mt-2 py-1 bg-green-500/10 border border-green-500/30 text-[9px] font-black text-green-500 uppercase italic flex items-center justify-center gap-2">
+                       <Unlock size={10} />
+                       Mastered
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

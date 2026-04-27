@@ -11,17 +11,8 @@ import { cn } from '../lib/utils';
 import { InventoryItem } from '../types';
 
 export const Inventory = () => {
-  const { stats } = useSystem();
+  const { stats, inventory, useItem } = useSystem();
   
-  // Mock inventory for now, since we haven't implemented a full inventory state in context yet
-  const inventory: InventoryItem[] = [
-    { id: '1', itemId: 'potion-low', name: 'High-Grade Healing Potion', description: 'Instantly restores 500 HP.', quantity: 15, type: 'consumable', rarity: 'C' },
-    { id: '2', itemId: 'sword-monarch', name: 'Demon-King\'s Shortsword', description: 'A weapon that resonates with shadow mana. +50 STR.', quantity: 1, type: 'equipment', rarity: 'A' },
-    { id: '3', itemId: 'crystal-mana', name: 'High-Level Mana Crystal', description: 'Pure energy harvested from an S-Rank dungeon.', quantity: 240, type: 'material', rarity: 'S' },
-    { id: '4', itemId: 'armor-shadow', name: 'Shadow Monarch Coat', description: 'Increases stealth and shadow mana efficiency.', quantity: 1, type: 'equipment', rarity: 'S' },
-    { id: '5', itemId: 'scroll-blink', name: 'Skill Scroll: Blink', description: 'Teaches the user the Blink skill.', quantity: 2, type: 'consumable', rarity: 'B' },
-  ];
-
   const getItemIcon = (type: string) => {
     switch (type) {
       case 'equipment': return Sword;
@@ -64,7 +55,14 @@ export const Inventory = () => {
         {inventory.map((item) => {
           const Icon = getItemIcon(item.type);
           return (
-            <SystemCard key={item.id} className="p-4 group hover:border-white/20 transition-all cursor-pointer relative overflow-hidden">
+            <SystemCard 
+              key={item.id} 
+              onClick={() => item.type === 'consumable' && useItem(item.itemId)}
+              className={cn(
+                "p-4 group hover:border-white/20 transition-all cursor-pointer relative overflow-hidden",
+                item.type === 'consumable' ? "hover:border-system-cyan/50" : "cursor-default"
+              )}
+            >
               <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:scale-110 transition-transform">
                 <Icon size={40} />
               </div>

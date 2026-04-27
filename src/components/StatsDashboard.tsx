@@ -76,11 +76,28 @@ export const StatsDashboard = () => {
                   {stats.name || 'Scholar candidate'}
                 </LegendaryTitle>
                 {stats.title && <p className="text-sm font-mono text-system-blue uppercase tracking-[0.2em] mt-1 italic">"{stats.title}"</p>}
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
-                    Student ID: <span className="text-system-blue">#AC-7729-S</span>
-                  </span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-system-cyan animate-pulse shadow-[0_0_8px_cyan]" />
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
+                      Class: <span className="text-system-cyan">{stats.hunterClass || 'UNRANKED'}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
+                      ID: <span className="text-system-blue">{stats.email || '#AC-7729-S'}</span>
+                    </span>
+                  </div>
+                  {stats.macAccount && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
+                        Node: <span className="text-neutral-400">{stats.macAccount}</span>
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-system-cyan animate-pulse shadow-[0_0_8px_cyan]" />
+                    <span className="text-[9px] font-mono text-system-cyan uppercase">Authenticated</span>
+                  </div>
                 </div>
               </div>
 

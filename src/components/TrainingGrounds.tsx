@@ -12,14 +12,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
 export const TrainingGrounds = () => {
-  const { stats, gainExp, addLog } = useSystem();
+  const { stats, gainExp, claimReward, addLog } = useSystem();
   const [activeMode, setActiveMode] = useState<'quiz' | 'analysis' | 'takingQuiz' | 'flashcards'>('quiz');
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-system-purple">
+          <div className="flex items-center gap-2 text-system-cyan">
             <Swords size={16} />
             <span className="text-[10px] font-black uppercase tracking-[0.3em]">Imperial Training Institute</span>
           </div>
@@ -37,7 +37,7 @@ export const TrainingGrounds = () => {
               onClick={() => setActiveMode('quiz')}
               className={cn(
                 "px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all",
-                activeMode === 'quiz' ? "bg-system-purple text-white shadow-glow" : "text-neutral-500 hover:text-neutral-300"
+                activeMode === 'quiz' ? "bg-system-blue text-white shadow-glow" : "text-neutral-500 hover:text-neutral-300"
               )}
             >
               Quizzes
@@ -46,7 +46,7 @@ export const TrainingGrounds = () => {
               onClick={() => setActiveMode('flashcards')}
               className={cn(
                 "px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all",
-                activeMode === 'flashcards' ? "bg-system-purple text-white shadow-glow" : "text-neutral-500 hover:text-neutral-300"
+                activeMode === 'flashcards' ? "bg-system-blue text-white shadow-glow" : "text-neutral-500 hover:text-neutral-300"
               )}
             >
               Flashcards
@@ -55,7 +55,7 @@ export const TrainingGrounds = () => {
               onClick={() => setActiveMode('analysis')}
               className={cn(
                 "px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all",
-                activeMode === 'analysis' ? "bg-system-purple text-white shadow-glow" : "text-neutral-500 hover:text-neutral-300"
+                activeMode === 'analysis' ? "bg-system-blue text-white shadow-glow" : "text-neutral-500 hover:text-neutral-300"
               )}
             >
               Analysis
@@ -67,16 +67,26 @@ export const TrainingGrounds = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-6">
           {activeMode === 'takingQuiz' ? (
-            <QuizTaking onExit={() => { setActiveMode('quiz'); gainExp(500); addLog('Completed Quiz Raid', 'Training'); }} />
+            <QuizTaking onExit={async (data) => { 
+                setActiveMode('quiz'); 
+                const percentage = (data.score / data.total) * 100;
+                const exp = percentage >= 80 ? 1000 : 500;
+                const gold = percentage >= 80 ? 200 : 100;
+                await claimReward(exp, gold, {
+                  title: 'TRAINING MISSION COMPLETE',
+                  message: `You cleared the quiz raid with a score of ${percentage.toFixed(0)}%. Rewards issued.`,
+                  type: 'success'
+                });
+            }} />
           ) : activeMode === 'flashcards' ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-4">
-                 <h2 className="text-xl font-bold italic uppercase tracking-widest text-system-purple">Deck: Quantum Mechanics</h2>
+                 <h2 className="text-xl font-bold italic uppercase tracking-widest text-system-cyan">Deck: Quantum Mechanics</h2>
                  <span className="text-xs font-mono bg-white/10 px-3 py-1 rounded text-neutral-300">12 Cards Remaining</span>
               </div>
-              <LegendaryCard className="min-h-[300px] flex flex-col justify-center items-center text-center p-12 cursor-pointer hover:border-system-purple/50 transition-all">
+              <LegendaryCard className="min-h-[300px] flex flex-col justify-center items-center text-center p-12 cursor-pointer hover:border-system-cyan/50 transition-all">
                  <div className="animate-in zoom-in-95 duration-500">
-                   <p className="text-sm font-mono text-system-purple uppercase tracking-widest mb-6">Front</p>
+                   <p className="text-sm font-mono text-system-cyan uppercase tracking-widest mb-6">Front</p>
                    <h3 className="text-2xl font-black text-white italic tracking-tighter max-w-lg mb-8">What is Heisenberg's Uncertainty Principle?</h3>
                  </div>
               </LegendaryCard>
@@ -91,7 +101,7 @@ export const TrainingGrounds = () => {
               ].map((quiz, idx) => (
                 <div 
                   key={quiz.title}
-                  className="group bg-black/40 border border-white/10 p-6 flex flex-col justify-between h-48 hover:border-system-purple/50 transition-all cursor-pointer relative overflow-hidden"
+                  className="group bg-black/40 border border-white/10 p-6 flex flex-col justify-between h-48 hover:border-system-cyan/50 transition-all cursor-pointer relative overflow-hidden"
                   style={{ clipPath: "polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)" }}
                 >
                   <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-125 transition-transform duration-500">
@@ -101,20 +111,20 @@ export const TrainingGrounds = () => {
                     <div className="flex items-center justify-between">
                       <span className={cn(
                         "text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest",
-                        quiz.difficulty === 'S' ? "bg-system-gold/20 text-system-gold border border-system-gold/30" : "bg-system-purple/20 text-system-purple border border-system-purple/30"
+                        quiz.difficulty === 'S' ? "bg-system-gold/20 text-system-gold border border-system-gold/30" : "bg-system-cyan/20 text-system-cyan border border-system-cyan/30"
                       )}>Rank {quiz.difficulty}</span>
                       <span className="text-[10px] font-mono text-neutral-500">{quiz.qCount} Questions</span>
                     </div>
-                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-tight group-hover:text-system-purple transition-colors">
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-tight group-hover:text-system-cyan transition-colors">
                       {quiz.title}
                     </h3>
                   </div>
                   <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-2">
-                      <TrendingUp size={14} className="text-system-purple" />
-                      <span className="text-[10px] font-black text-system-purple uppercase tracking-widest">+{quiz.exp} EXP</span>
+                      <TrendingUp size={14} className="text-system-cyan" />
+                      <span className="text-[10px] font-black text-system-cyan uppercase tracking-widest">+{quiz.exp} EXP</span>
                     </div>
-                    <SystemButton onClick={() => setActiveMode('takingQuiz')} className="text-[9px] px-4 bg-system-purple/10 border-system-purple/30">
+                    <SystemButton onClick={() => setActiveMode('takingQuiz')} className="text-[9px] px-4 bg-system-cyan/10 border-system-cyan/30">
                       Enter
                     </SystemButton>
                   </div>
@@ -171,23 +181,23 @@ export const TrainingGrounds = () => {
                 </div>
                 <span className="text-lg font-black text-red-500 italic">42%</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-white/5 border-l-2 border-system-purple">
+              <div className="flex items-center justify-between p-3 bg-white/5 border-l-2 border-system-blue">
                 <div className="space-y-0.5">
                   <p className="text-[10px] font-bold text-white uppercase italic">Shadow Mock Test</p>
                   <p className="text-[8px] font-mono text-neutral-500 uppercase">3 days ago</p>
                 </div>
-                <span className="text-lg font-black text-system-purple italic">76%</span>
+                <span className="text-lg font-black text-system-blue italic">76%</span>
               </div>
             </div>
           </SystemCard>
 
-          <SystemCard className="p-6 bg-system-purple/5 border-system-purple/20">
-             <div className="flex items-center gap-3 text-system-purple mb-4">
+          <SystemCard className="p-6 bg-system-cyan/5 border-system-cyan/20">
+             <div className="flex items-center gap-3 text-system-cyan mb-4">
                <Zap size={20} />
                <h3 className="text-sm font-black italic uppercase tracking-widest">Global Ranking</h3>
              </div>
              <p className="text-[10px] font-mono text-neutral-400 uppercase leading-relaxed mb-6">
-                Your average score is within top 12% of <span className="text-system-purple font-bold">A-Rank</span> Candidates. 
+                Your average score is within top 12% of <span className="text-system-cyan font-bold">A-Rank</span> Candidates. 
                 Improve by 4% to reach <span className="text-system-gold font-bold italic tracking-tighter">Rank S</span>.
              </p>
              <div className="space-y-2">
@@ -196,7 +206,7 @@ export const TrainingGrounds = () => {
                   <span className="text-white">88% / 92%</span>
                 </div>
                 <div className="h-1 bg-white/5 overflow-hidden">
-                  <div className="h-full bg-system-purple w-[88%] shadow-[0_0_10px_purple]" />
+                  <div className="h-full bg-system-cyan w-[88%] shadow-[0_0_10px_cyan]" />
                 </div>
              </div>
           </SystemCard>
