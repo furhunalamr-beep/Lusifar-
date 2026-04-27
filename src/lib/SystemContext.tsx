@@ -62,7 +62,8 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fatigue: 0, maxFatigue: 100,
     gold: 0, rank: 'E', str: 10, int: 10, per: 10, vit: 10, agi: 10, knowledgePoints: 0,
     onboarded: false,
-    studyHours: 0, chaptersMastered: 0, quizzesTaken: 0, averageScore: 0
+    studyHours: 0, chaptersMastered: 0, quizzesTaken: 0, averageScore: 0,
+    hardcoreFocus: false
   });
   const [quests, setQuests] = useState<Quest[]>([]);
   const [chapters, setChapters] = useState<SyllabusChapter[]>([]);

@@ -35,7 +35,26 @@ import { ChatInterface } from './components/ChatInterface';
 export default function App() {
   const [showIntro, setShowIntro] = React.useState(true);
   const [showNotifications, setShowNotifications] = React.useState(false);
+  const [showScrollTop, setShowScrollTop] = React.useState(false);
+  const [scrollProgress, setScrollProgress] = React.useState(0);
   const { activeTab, stats, logs, notifications } = useSystem();
+  
+  const viewportRef = React.useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const progress = (target.scrollTop / (target.scrollHeight - target.clientHeight)) * 100;
+    setScrollProgress(progress);
+    setShowScrollTop(target.scrollTop > 500);
+  };
+
+  const scrollToTop = () => {
+    viewportRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  React.useEffect(() => {
+    viewportRef.current?.scrollTo({ top: 0 });
+  }, [activeTab]);
   
   const unreadNotifications = notifications.filter(n => !n.read).length;
   
@@ -75,8 +94,8 @@ export default function App() {
       </AnimatePresence>
 
       {/* Navigation */}
-      <Sidebar />
-      <BottomNavigation />
+      {!stats.hardcoreFocus && <Sidebar />}
+      {!stats.hardcoreFocus && <BottomNavigation />}
 
       {/* Main Content Area - Game World Perspective */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0 relative z-10 p-2 md:p-4">
@@ -129,7 +148,30 @@ export default function App() {
         </div>
         
         {/* Dynamic Viewport */}
-        <div className="flex-1 bg-black/90 relative overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar rounded-lg border border-neutral-800/50">
+        <div 
+          ref={viewportRef}
+          onScroll={handleScroll}
+          className="flex-1 bg-black/90 relative overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar rounded-lg border border-neutral-800/50"
+        >
+           {/* Scroll Progress Bar */}
+           <div className="sticky top-0 left-0 w-full h-[2px] bg-white/5 z-[100]">
+              <motion.div 
+                className="h-full bg-system-cyan shadow-[0_0_10px_rgba(0,242,255,0.8)]"
+                style={{ width: `${scrollProgress}%` }}
+              />
+           </div>
+
+           {showScrollTop && (
+             <motion.button
+               initial={{ opacity: 0, scale: 0.5 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.5 }}
+               onClick={scrollToTop}
+               className="fixed bottom-24 right-8 z-[100] p-3 bg-system-cyan/20 border border-system-cyan/50 rounded-full text-system-cyan hover:bg-system-cyan/40 transition-all shadow-[0_0_20px_rgba(0,242,255,0.2)] md:bottom-32 md:right-12"
+             >
+               <ChevronUp size={24} />
+             </motion.button>
+           )}
            
           <div className="w-full min-h-full flex flex-col">
             <AnimatePresence mode="wait">

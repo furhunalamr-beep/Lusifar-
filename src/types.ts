@@ -36,6 +36,7 @@ export interface HunterStats {
   chaptersMastered: number;
   quizzesTaken: number;
   averageScore: number;
+  hardcoreFocus?: boolean;
 }
 
 export interface SystemSkill {

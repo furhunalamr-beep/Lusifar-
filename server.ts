@@ -260,6 +260,10 @@ try {
 } catch (e) {}
 
 try {
+  db.exec("ALTER TABLE stats ADD COLUMN hardcore_focus INTEGER DEFAULT 0");
+} catch (e) {}
+
+try {
   db.exec("ALTER TABLE shadows ADD COLUMN level INTEGER DEFAULT 1");
   db.exec("ALTER TABLE shadows ADD COLUMN rank TEXT DEFAULT 'E'");
   db.exec("ALTER TABLE shadows ADD COLUMN skills TEXT DEFAULT '[]'");
@@ -523,11 +527,13 @@ async function startServer() {
                hunter_class as hunterClass, email, password, mac_account as macAccount,
                str, int, per, vit, agi, knowledge_points as knowledgePoints,
                onboarded, study_hours as studyHours, chapters_mastered as chaptersMastered,
-               quizzes_taken as quizzesTaken, average_score as averageScore
+               quizzes_taken as quizzesTaken, average_score as averageScore,
+               hardcore_focus as hardcoreFocus
          FROM stats WHERE id = 1
       `).get() as any;
       if (stats) {
         stats.onboarded = !!stats.onboarded;
+        stats.hardcoreFocus = !!stats.hardcoreFocus;
       }
       res.json(stats);
     } catch (e: any) {
@@ -538,16 +544,17 @@ async function startServer() {
 
   app.post('/api/stats/update', (req, res) => {
     try {
-      const { name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, hunterClass, email, password, macAccount, str, int, per, vit, agi, knowledgePoints, onboarded, studyHours, chaptersMastered, quizzesTaken, averageScore } = req.body;
+      const { name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, hunterClass, email, password, macAccount, str, int, per, vit, agi, knowledgePoints, onboarded, studyHours, chaptersMastered, quizzesTaken, averageScore, hardcoreFocus } = req.body;
       const stmt = db.prepare(`
         UPDATE stats SET 
           name = ?, title = ?, profile_pic = ?, level = ?, exp = ?, max_exp = ?, hp = ?, max_hp = ?, 
           mana = ?, max_mana = ?, fatigue = ?, max_fatigue = ?, gold = ?, rank = ?, 
           hunter_class = ?, email = ?, password = ?, mac_account = ?,
           str = ?, int = ?, per = ?, vit = ?, agi = ?, knowledge_points = ?,
-          onboarded = ?, study_hours = ?, chapters_mastered = ?, quizzes_taken = ?, average_score = ?
+          onboarded = ?, study_hours = ?, chapters_mastered = ?, quizzes_taken = ?, average_score = ?,
+          hardcore_focus = ?
         WHERE id = 1
-      `).run(name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, hunterClass, email, password, macAccount, str, int, per, vit, agi, knowledgePoints, onboarded ? 1 : 0, studyHours, chaptersMastered, quizzesTaken, averageScore);
+      `).run(name, title, profilePic, level, exp, maxExp, hp, maxHp, mana, maxMana, fatigue, maxFatigue, gold, rank, hunterClass, email, password, macAccount, str, int, per, vit, agi, knowledgePoints, onboarded ? 1 : 0, studyHours, chaptersMastered, quizzesTaken, averageScore, hardcoreFocus ? 1 : 0);
       res.json({ success: true });
     } catch (e: any) {
       console.error("[SERVER] Update Stats Error:", e);
@@ -754,10 +761,14 @@ async function startServer() {
   // Advanced Logic: Reward Processing
   app.post('/api/claim-reward', (req, res) => {
     try {
-      const { exp, gold, title, notification } = req.body;
+      let { exp, gold, title, notification } = req.body;
       
       const stats = db.prepare('SELECT * FROM stats WHERE id = 1').get() as any;
       
+      // Intelligence Bonus: Every 10 INT gives 5% more EXP
+      const intBonus = Math.floor((stats.int || 0) / 10) * 0.05;
+      exp = Math.round(exp * (1 + intBonus));
+
       let newExp = stats.exp + exp;
       let newLevel = stats.level;
       let newMaxExp = stats.max_exp;

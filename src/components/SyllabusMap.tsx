@@ -18,7 +18,10 @@ export const SyllabusMap = () => {
     if (!chapter || chapter.isLocked) return;
 
     try {
-      const newMastery = Math.min(100, chapter.mastery + 10);
+      const baseGain = 10;
+      const intelligenceBonus = Math.floor((stats.int || 10) / 20);
+      const newMastery = Math.min(100, chapter.mastery + baseGain + intelligenceBonus);
+      
       const res = await fetch('/api/chapters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,7 +32,7 @@ export const SyllabusMap = () => {
         await fetchChapters();
         await claimReward(100, 50, {
           title: 'CHAPTER STUDIED',
-          message: `Mastery of "${chapter.title}" increased to ${newMastery}%.`,
+          message: `Mastery of "${chapter.title}" increased to ${newMastery}%. ${intelligenceBonus > 0 ? `(+${intelligenceBonus}% INT Bonus)` : ''}`,
           type: 'system'
         });
         

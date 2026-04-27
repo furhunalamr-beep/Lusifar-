@@ -21,6 +21,7 @@ export const FocusChamber = () => {
   const [isLockdown, setIsLockdown] = useState(false);
   const [mode, setMode] = useState<'work' | 'break'>('work');
   const [selectedDungeon, setSelectedDungeon] = useState<string | null>(null);
+  const [multiplier, setMultiplier] = useState(1.0);
 
   const dungeons = [
     { id: 'math', name: 'Infinite Calculus Dungeon', difficulty: 'A', reward: 'High knowledge gain' },
@@ -39,6 +40,10 @@ export const FocusChamber = () => {
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft(prev => prev - 1);
+        // Increase multiplier every 5 minutes by 0.1
+        if (mode === 'work' && (25 * 60 - timeLeft) % 300 === 0 && timeLeft < 25 * 60) {
+            setMultiplier(prev => Math.min(2.0, prev + 0.1));
+        }
       }, 1000);
     } else if (timeLeft === 0) {
       setIsActive(false);
@@ -49,15 +54,20 @@ export const FocusChamber = () => {
 
   const handleComplete = () => {
     if (mode === 'work') {
-      const rewardExp = selectedDungeon ? 300 : 200;
-      addLog(`[DUNGEON] RAID ON ${selectedDungeon?.toUpperCase() || 'GENERAL AREA'} COMPLETE. +${rewardExp} EXP, +10 MP.`, 'success');
-      gainExp(rewardExp);
+      const baseExp = selectedDungeon ? 300 : 200;
+      const rewardedExp = Math.round(baseExp * multiplier);
+      const rewardedMp = Math.round(10 * multiplier);
+      const studyGain = 0.4 * multiplier;
+
+      addLog(`[DUNGEON] RAID ON ${selectedDungeon?.toUpperCase() || 'GENERAL AREA'} COMPLETE. X${multiplier.toFixed(1)} MULTIPLIER ACTIVE. +${rewardedExp} EXP, +${rewardedMp} MP.`, 'success');
+      gainExp(rewardedExp);
       updateStats({ 
-        mana: Math.min(stats.mana + 10, stats.maxMana),
-        studyHours: stats.studyHours + 0.4
+        mana: Math.min(stats.mana + rewardedMp, stats.maxMana),
+        studyHours: stats.studyHours + studyGain
       });
       setMode('break');
       setTimeLeft(5 * 60);
+      setMultiplier(1.0); // Reset for break
     } else {
       addLog(`[SYSTEM] REST PERIOD CONCLUDED. PREPARE FOR THE NEXT GATE.`, 'info');
       setMode('work');
@@ -120,9 +130,13 @@ export const FocusChamber = () => {
   }
 
   const toggleLockdown = () => {
-    setIsLockdown(!isLockdown);
-    if (!isLockdown) {
+    const newState = !isLockdown;
+    setIsLockdown(newState);
+    updateStats({ hardcoreFocus: newState });
+    if (newState) {
       addLog('[SYSTEM] CRITICAL: FOCUS LOCKDOWN INITIATED. EXTERNAL APPS RESTRICTED.', 'alert');
+    } else {
+      addLog('[SYSTEM] FOCUS LOCKDOWN DEACTIVATED. HUD RESTORED.', 'info');
     }
   };
 
@@ -201,6 +215,15 @@ export const FocusChamber = () => {
                  <h2 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter tabular-nums text-glow">
                     {formatTime(timeLeft)}
                  </h2>
+                 {mode === 'work' && (
+                    <motion.p 
+                      animate={{ opacity: [0.5, 1, 0.5], filter: ["blur(0px)", "blur(1px)", "blur(0px)"] }}
+                      transition={{ repeat: Infinity, duration: 1 }}
+                      className="text-[10px] font-black text-system-cyan uppercase tracking-tighter"
+                    >
+                      Concentration X{multiplier.toFixed(1)}
+                    </motion.p>
+                  )}
                </div>
             </div>
           </div>

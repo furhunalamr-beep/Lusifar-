@@ -7,14 +7,15 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+    },
     plugins: [
       react(), 
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        devOptions: {
-          enabled: true
-        },
         manifest: {
           name: 'Solo System',
           short_name: 'Solo System',
@@ -24,19 +25,19 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: '/logo.png',
+              src: '/logo.svg',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: '/logo.png',
+              src: '/logo.svg',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: '/logo.png',
+              src: '/logo.svg',
               sizes: '512x512',
-              type: 'image/png',
+              type: 'image/svg+xml',
               purpose: 'any maskable'
             }
           ]
