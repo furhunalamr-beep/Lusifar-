@@ -11,7 +11,7 @@ import { StatBar, RankBadge, SystemCard, LegendaryCard, SystemButton, LegendaryT
 import { cn } from '../lib/utils';
 
 export const StatsDashboard = () => {
-  const { stats, setActiveTab } = useSystem();
+  const { stats, setActiveTab, logs } = useSystem();
 
   const combatStats = [
     { label: 'Strength', value: stats.str, icon: Sword, color: 'text-red-400', desc: 'Increases damage and study stamina' },
@@ -46,8 +46,8 @@ export const StatsDashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Identity Card */}
         <SystemCard className="xl:col-span-2 relative overflow-hidden group border-system-cyan/20">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 group-hover:opacity-10 transition-all duration-1000">
-            <Shield size={160} />
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 group-hover:opacity-10 transition-all duration-1000 -mr-12 -mt-12 pointer-events-none text-system-cyan">
+            <img src="/logo.png" alt="System Logo Outline" className="w-[300px] h-[300px] object-contain opacity-50 contrast-150 grayscale" />
           </div>
           
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left relative z-10">
@@ -160,12 +160,12 @@ export const StatsDashboard = () => {
           </div>
         </SystemCard>
 
-        <SystemCard className="flex flex-col items-center justify-center text-center p-12 bg-gradient-to-br from-legendary/10 to-transparent border-legendary/20">
+        <SystemCard className="flex flex-col items-center justify-center text-center p-12 bg-gradient-to-br from-system-cyan/10 to-transparent border-system-cyan/20">
           <div className="mb-6 relative">
-            <div className="absolute inset-0 bg-legendary blur-3xl opacity-20 animate-pulse" />
-            <Brain size={64} className="text-legendary relative z-10" />
+            <div className="absolute inset-0 bg-system-cyan blur-3xl opacity-20 animate-pulse" />
+            <img src="/logo.png" alt="System Logo" className="w-24 h-24 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(0,255,255,0.5)]" />
           </div>
-          <h2 className="text-xl font-black text-white italic uppercase tracking-widest mb-2 text-transparent bg-clip-text bg-gradient-to-r from-system-gold to-white">The Path of Sovereignty</h2>
+          <h2 className="text-xl font-black text-white italic uppercase tracking-widest mb-2 text-transparent bg-clip-text bg-gradient-to-r from-system-cyan to-white drop-shadow-[0_0_10px_rgba(0,255,255,0.3)]">The Path of Sovereignty</h2>
           <p className="text-[10px] font-mono text-neutral-400 max-w-xs leading-relaxed uppercase tracking-tighter">
             Every minute of focus in the chamber, every chapter mastered in the roadmap, brings you closer to the absolute knowledge of the system.
           </p>
@@ -228,6 +228,48 @@ export const StatsDashboard = () => {
               <ChevronRight className="text-blue-500 group-hover:translate-x-2 transition-transform" />
             </motion.div>
           </div>
+        </section>
+
+        {/* Recent Performance History */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-system-cyan">
+             <Activity size={16} />
+             <span className="text-[10px] font-black uppercase tracking-widest">Recent Performance History</span>
+          </div>
+          
+          <SystemCard className="p-0 border-white/5 overflow-hidden">
+            <div className="divide-y divide-white/5 max-h-[300px] overflow-y-auto custom-scrollbar">
+              {logs.filter(l => l.type === 'success' || l.type === 'level_up' || l.type === 'quest_completed' || l.type === 'quiz_completed').length > 0 ? (
+                logs
+                  .filter(l => l.type === 'success' || l.type === 'level_up' || l.type === 'quest_completed' || l.type === 'quiz_completed')
+                  .slice(0, 10)
+                  .map(log => (
+                    <div key={log.id} className="p-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors">
+                      <div className={cn(
+                        "p-2 rounded border group-hover:scale-110 transition-transform", 
+                        log.type === 'level_up' ? "bg-system-purple/10 border-system-purple/20 text-system-purple" : "bg-system-cyan/10 border-system-cyan/20 text-system-cyan"
+                      )}>
+                        {log.type === 'level_up' ? <Trophy size={16} /> : <Target size={16} />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[11px] font-mono text-neutral-300 leading-relaxed">{log.message}</p>
+                        <p className="text-[9px] font-mono text-neutral-500 uppercase mt-1">
+                          {new Date(log.timestamp).toLocaleDateString()} - {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+                        {log.type.replace('_', ' ')}
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="p-8 text-center flex flex-col items-center justify-center text-neutral-600">
+                  <Activity size={24} className="mb-2 opacity-50" />
+                  <p className="text-[10px] font-mono uppercase tracking-widest">No recent performance data found</p>
+                </div>
+              )}
+            </div>
+          </SystemCard>
         </section>
       </div>
     );

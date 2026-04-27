@@ -23,19 +23,7 @@ export const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-black/80 border-b border-white/10 z-[60]">
-        <div className="flex items-center gap-2">
-           <Zap size={18} className="text-system-cyan" />
-           <span className="text-xs font-black uppercase italic tracking-widest text-white">Hunter System</span>
-        </div>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2 text-system-cyan hover:bg-system-cyan/10 rounded transition-colors"
-        >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
+      {/* Mobile Header Removed as requested */}
 
       {/* Overlay */}
       {isOpen && (
@@ -96,13 +84,6 @@ export const Sidebar = () => {
             </button>
           ))}
         </nav>
-
-        <div className="p-4 border-t border-white/5 space-y-2">
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-[10px] uppercase font-bold text-red-500/70 hover:text-red-500 transition-colors">
-            <LogOut size={14} />
-            Force Terminate
-          </button>
-        </div>
       </div>
     </>
   );

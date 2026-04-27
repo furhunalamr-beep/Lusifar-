@@ -20,7 +20,8 @@ export const VoiceInterface = ({ onResult }: { onResult: (text: string) => void 
       rec.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
         if (event.error === 'not-allowed') {
-          alert('Microphone permission denied. Please enable it in your browser settings.');
+          // alert('Microphone permission denied. Please enable it in your browser settings.');
+          console.error('[SYSTEM] Microphone permission denied.');
         }
         setIsListening(false);
       };

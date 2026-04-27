@@ -79,7 +79,7 @@ Maintain character at all times. Use [SYSTEM NOTIFICATION] prefixes for critical
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3-flash-preview",
         contents: [
           ...history,
           userMsg
@@ -107,7 +107,7 @@ Maintain character at all times. Use [SYSTEM NOTIFICATION] prefixes for critical
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed bottom-24 right-8 w-[400px] h-[600px] z-[150] flex flex-col pointer-events-auto"
+            className="fixed bottom-36 md:bottom-24 right-2 md:right-8 2xl:right-[340px] w-[calc(100vw-16px)] sm:w-[400px] h-[600px] max-h-[60vh] z-[150] flex flex-col pointer-events-auto"
           >
             <div className="flex-1 bg-black/80 border border-system-purple/30 backdrop-blur-2xl rounded-2xl shadow-[0_0_50px_rgba(157,0,255,0.2)] overflow-hidden flex flex-col">
               {/* Header */}
@@ -203,7 +203,7 @@ Maintain character at all times. Use [SYSTEM NOTIFICATION] prefixes for critical
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center text-white transition-all z-[160] shadow-[0_0_25px_rgba(157,0,255,0.5)]",
+          "fixed bottom-20 md:bottom-8 right-8 2xl:right-[340px] w-14 h-14 rounded-full flex items-center justify-center text-white transition-all z-[160] shadow-[0_0_25px_rgba(157,0,255,0.5)]",
           isOpen ? "bg-red-500 rotate-90" : "bg-system-purple"
         )}
       >

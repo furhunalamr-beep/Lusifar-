@@ -13,7 +13,7 @@ import { cn } from '../lib/utils';
 
 export const TrainingGrounds = () => {
   const { stats, gainExp, addLog } = useSystem();
-  const [activeMode, setActiveMode] = useState<'quiz' | 'analysis' | 'takingQuiz'>('quiz');
+  const [activeMode, setActiveMode] = useState<'quiz' | 'analysis' | 'takingQuiz' | 'flashcards'>('quiz');
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -24,10 +24,10 @@ export const TrainingGrounds = () => {
             <span className="text-[10px] font-black uppercase tracking-[0.3em]">Imperial Training Institute</span>
           </div>
           <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter">
-            {activeMode === 'takingQuiz' ? 'Quiz Active' : 'Training Grounds'}
+            {activeMode === 'takingQuiz' ? 'Quiz Active' : activeMode === 'flashcards' ? 'Memory Core' : 'Training Grounds'}
           </h1>
           <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest max-w-xl">
-             {activeMode === 'takingQuiz' ? 'Maintain focus. Time is ticking.' : 'Sharpen your academic abilities through rigorous testing and board trend analysis.'}
+             {activeMode === 'takingQuiz' ? 'Maintain focus. Time is ticking.' : activeMode === 'flashcards' ? 'Spaced Repetition System enabled. Retrieve the lost knowledge.' : 'Sharpen your academic abilities through rigorous testing and board trend analysis.'}
           </p>
         </div>
 
@@ -41,6 +41,15 @@ export const TrainingGrounds = () => {
               )}
             >
               Quizzes
+            </button>
+            <button 
+              onClick={() => setActiveMode('flashcards')}
+              className={cn(
+                "px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all",
+                activeMode === 'flashcards' ? "bg-system-purple text-white shadow-glow" : "text-neutral-500 hover:text-neutral-300"
+              )}
+            >
+              Flashcards
             </button>
             <button 
               onClick={() => setActiveMode('analysis')}
@@ -59,6 +68,19 @@ export const TrainingGrounds = () => {
         <div className="xl:col-span-2 space-y-6">
           {activeMode === 'takingQuiz' ? (
             <QuizTaking onExit={() => { setActiveMode('quiz'); gainExp(500); addLog('Completed Quiz Raid', 'Training'); }} />
+          ) : activeMode === 'flashcards' ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                 <h2 className="text-xl font-bold italic uppercase tracking-widest text-system-purple">Deck: Quantum Mechanics</h2>
+                 <span className="text-xs font-mono bg-white/10 px-3 py-1 rounded text-neutral-300">12 Cards Remaining</span>
+              </div>
+              <LegendaryCard className="min-h-[300px] flex flex-col justify-center items-center text-center p-12 cursor-pointer hover:border-system-purple/50 transition-all">
+                 <div className="animate-in zoom-in-95 duration-500">
+                   <p className="text-sm font-mono text-system-purple uppercase tracking-widest mb-6">Front</p>
+                   <h3 className="text-2xl font-black text-white italic tracking-tighter max-w-lg mb-8">What is Heisenberg's Uncertainty Principle?</h3>
+                 </div>
+              </LegendaryCard>
+            </div>
           ) : activeMode === 'quiz' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
@@ -123,9 +145,6 @@ export const TrainingGrounds = () => {
                    <p className="text-2xl font-black text-system-gold">1,240</p>
                  </div>
               </div>
-              <SystemButton className="px-12 py-4 bg-system-gold/10 border-system-gold/30 text-system-gold font-black tracking-[0.4em] text-xs">
-                INITIALIZE SCAN
-              </SystemButton>
             </LegendaryCard>
           )}
         </div>
@@ -160,10 +179,6 @@ export const TrainingGrounds = () => {
                 <span className="text-lg font-black text-system-purple italic">76%</span>
               </div>
             </div>
-            
-            <SystemButton className="w-full py-3 bg-white/5 text-neutral-400 border-white/10 text-[10px] tracking-widest">
-              VIEW HISTORY
-            </SystemButton>
           </SystemCard>
 
           <SystemCard className="p-6 bg-system-purple/5 border-system-purple/20">

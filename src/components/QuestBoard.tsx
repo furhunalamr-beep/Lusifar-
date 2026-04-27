@@ -18,6 +18,7 @@ export const QuestBoard = () => {
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [newQuestDifficulty, setNewQuestDifficulty] = useState<Rank>('E');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<'All' | 'Academic' | 'Daily'>('All');
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
@@ -31,7 +32,7 @@ export const QuestBoard = () => {
         model: "gemini-3-flash-preview",
         contents: `Generate a Solo Leveling academic quest for the topic: '${newQuestTitle}'.
         Respond ONLY with valid JSON (no markdown):
-        {"title": "Quest Title", "description": "Dramatic academic description", "difficulty": "C", "expReward": 250, "goldReward": 400, "manaCost": 15}`
+        {"title": "Quest Title", "description": "Dramatic academic description", "difficulty": "C", "expReward": 250, "goldReward": 40, "manaCost": 15}`
       });
       
       const text = response.text || '';
@@ -91,23 +92,33 @@ export const QuestBoard = () => {
   };
 
   const completeQuest = async (quest: Quest) => {
-    await fetch(`/api/quests/${quest.id}/complete`, { method: 'POST' });
-    gainExp(quest.expReward);
-    updateStats({ gold: stats.gold + quest.goldReward });
-    fetchQuests();
-    addLog(`[SYSTEM] ACADEMIC QUEST CLEARED: ${quest.title}. REWARDS COLLECTED.`, 'success');
+    try {
+      const response = await fetch(`/api/quests/${quest.id}/complete`, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+      const expReward = Number(quest.expReward) || 0;
+      const goldReward = Number(quest.goldReward) || 0;
+      await gainExp(expReward);
+      await updateStats({ gold: stats.gold + goldReward });
+      fetchQuests();
+      addLog(`[SYSTEM] ACADEMIC QUEST CLEARED: ${quest.title}. REWARDS COLLECTED.`, 'success');
+    } catch (error) {
+      console.error("Error completing quest:", error);
+      addLog(`[SYSTEM] ERROR COMPLETING QUEST: ${error instanceof Error ? error.message : 'Unknown error'}`, 'alert');
+    }
   };
 
   const populateAllRanks = async () => {
     const ranks: Rank[] = ['E', 'D', 'C', 'B', 'A', 'S'];
     for (const rank of ranks) {
       const baseRewards = {
-        E: { exp: 50, gold: 100, mana: 10 },
-        D: { exp: 150, gold: 300, mana: 25 },
-        C: { exp: 400, gold: 800, mana: 50 },
-        B: { exp: 1000, gold: 2000, mana: 80 },
-        A: { exp: 3000, gold: 5000, mana: 120 },
-        S: { exp: 10000, gold: 20000, mana: 250 },
+        E: { exp: 50, gold: 10, mana: 10 },
+        D: { exp: 150, gold: 25, mana: 25 },
+        C: { exp: 400, gold: 50, mana: 50 },
+        B: { exp: 1000, gold: 100, mana: 80 },
+        A: { exp: 3000, gold: 200, mana: 120 },
+        S: { exp: 10000, gold: 500, mana: 250 },
       }[rank];
 
       for (let i = 1; i <= 3; i++) {
@@ -133,20 +144,64 @@ export const QuestBoard = () => {
     addLog('[SYSTEM] POPULATED NEW MISSIONS ACROSS ALL RANKS', 'success');
   };
 
+  const populateMassMissions = async () => {
+    // 15 Quests
+    for (let i = 1; i <= 15; i++) {
+      await fetch('/api/quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          title: `Quest ${i}: Academic Challenge`,
+          description: `Academic mission ${i}. Keep up the great work!`,
+          difficulty: 'E',
+          expReward: 100 * i,
+          goldReward: 10 * i,
+          manaCost: 5,
+          status: 'available',
+          type: 'manual',
+          category: 'Academic'
+        })
+      });
+    }
+
+    // 5 Daily Quests
+    for (let i = 1; i <= 5; i++) {
+      await fetch('/api/quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          title: `Daily Task ${i}: Routine Study`,
+          description: `Routine study task ${i}.`,
+          difficulty: 'E',
+          expReward: 200,
+          goldReward: 20,
+          manaCost: 2,
+          status: 'available',
+          type: 'manual',
+          category: 'Daily'
+        })
+      });
+    }
+    fetchQuests();
+    addLog('[SYSTEM] POPULATED 15 QUESTS AND 5 DAILY QUESTS', 'success');
+  };
+
   const handleCreateQuest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuestTitle.trim()) return;
 
     const baseRewards = {
-      E: { exp: 50, gold: 100, mana: 10 },
-      D: { exp: 150, gold: 300, mana: 25 },
-      C: { exp: 400, gold: 800, mana: 50 },
-      B: { exp: 1000, gold: 2000, mana: 80 },
-      A: { exp: 3000, gold: 5000, mana: 120 },
-      S: { exp: 10000, gold: 20000, mana: 250 },
-      National: { exp: 50000, gold: 100000, mana: 500 },
-      EX: { exp: 500000, gold: 1000000, mana: 2000 }
-    }[newQuestDifficulty] || { exp: 50, gold: 100, mana: 10 };
+      E: { exp: 50, gold: 10, mana: 10 },
+      D: { exp: 150, gold: 25, mana: 25 },
+      C: { exp: 400, gold: 50, mana: 50 },
+      B: { exp: 1000, gold: 100, mana: 80 },
+      A: { exp: 3000, gold: 200, mana: 120 },
+      S: { exp: 10000, gold: 500, mana: 250 },
+      National: { exp: 50000, gold: 1000, mana: 500 },
+      EX: { exp: 500000, gold: 5000, mana: 2000 }
+    }[newQuestDifficulty] || { exp: 50, gold: 10, mana: 10 };
 
     const questData = {
       id: crypto.randomUUID(),
@@ -173,7 +228,7 @@ export const QuestBoard = () => {
   };
 
   return (
-    <div className="h-full overflow-y-auto space-y-12 pr-2">
+    <div className="w-full space-y-12 pr-2">
       {/* Main Quest Board Section */}
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -181,37 +236,31 @@ export const QuestBoard = () => {
             <LegendaryTitle className="text-2xl">Academic Quest Board</LegendaryTitle>
             <p className="text-[10px] font-mono text-neutral-500 uppercase">Available academic challenges and research missions</p>
           </div>
-          <SystemButton onClick={() => setIsCreating(true)} className="flex items-center gap-2">
-            <Plus size={14} />
-            Register New Mission
-          </SystemButton>
-          <SystemButton onClick={populateAllRanks} className="flex items-center gap-2 bg-system-purple/10 border-system-purple/30 text-system-purple">
-            <Target size={14} />
-            Populate All Ranks
-          </SystemButton>
-          <SystemButton onClick={async () => {
-            await fetch('/api/quests', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                id: crypto.randomUUID(),
-                title: 'Calculus Mastery',
-                description: 'Solve the provided calculus problems set.',
-                difficulty: 'E',
-                expReward: 50,
-                goldReward: 100,
-                manaCost: 10,
-                status: 'available',
-                type: 'manual',
-                category: 'Academic'
-              })
-            });
-            fetchQuests();
-            addLog('[SYSTEM] SAMPLE QUEST ADDED', 'info');
-          }} className="flex items-center gap-2 bg-system-gold/10 border-system-gold/30 text-system-gold">
-            <Zap size={14} />
-            Quick Academic Task
-          </SystemButton>
+          <div className="flex gap-2">
+            {(['All', 'Academic', 'Daily'] as const).map(cat => (
+              <SystemButton 
+                key={cat} 
+                onClick={() => setActiveCategory(cat)} 
+                className={cn("text-xs", activeCategory === cat ? "bg-system-purple/20 border-system-purple/50" : "bg-transparent border-white/10")}
+              >
+                {cat}
+              </SystemButton>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <SystemButton onClick={() => setIsCreating(true)} className="flex items-center gap-2">
+              <Plus size={14} />
+              Register New Mission
+            </SystemButton>
+            <SystemButton onClick={populateAllRanks} className="flex items-center gap-2 bg-system-purple/10 border-system-purple/30 text-system-purple">
+              <Target size={14} />
+              Populate All Ranks
+            </SystemButton>
+            <SystemButton onClick={populateMassMissions} className="flex items-center gap-2 bg-system-blue/10 border-system-blue/30 text-system-blue">
+              <Target size={14} />
+              Populate Mass Missions
+            </SystemButton>
+          </div>
         </div>
 
         {isCreating && (
@@ -258,7 +307,7 @@ export const QuestBoard = () => {
 
         <div className="space-y-12">
           {['S', 'A', 'B', 'C', 'D', 'E'].map(rank => {
-            const rankQuests = quests.filter(q => q.difficulty === rank);
+            const rankQuests = quests.filter(q => q.difficulty === rank && (activeCategory === 'All' ? true : q.category === activeCategory));
             if (rankQuests.length === 0) return null;
 
             return (

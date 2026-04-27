@@ -11,13 +11,12 @@ import { useSound } from '../lib/useSound';
 import { useSystem } from '../lib/SystemContext';
 
 export const SystemButton = ({ className, children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
-  const { playClick, speakClick } = useSound();
+  const { playClick } = useSound();
   const { soundEnabled } = useSystem();
   
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (soundEnabled) {
       playClick();
-      speakClick();
     }
     if (props.onClick) props.onClick(e);
   };

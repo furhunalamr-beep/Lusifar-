@@ -227,9 +227,6 @@ export const FocusChamber = () => {
              >
                {isActive ? <Pause size={32} className="text-white fill-white" /> : <Play size={32} className="text-white fill-white translate-x-1" />}
              </button>
-             <button className="w-12 h-12 rounded border border-white/10 flex items-center justify-center text-neutral-500 hover:text-white transition-colors">
-               <Settings size={20} />
-             </button>
           </div>
         </div>
 

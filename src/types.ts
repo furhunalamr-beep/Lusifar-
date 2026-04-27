@@ -113,7 +113,7 @@ export interface SystemLog {
   id: string;
   message: string;
   timestamp: string;
-  type: 'info' | 'success' | 'alert' | 'level_up';
+  type: 'info' | 'success' | 'alert' | 'level_up' | 'quest_completed' | 'quiz_completed' | 'Training';
 }
 
 export interface ArchiveItem {

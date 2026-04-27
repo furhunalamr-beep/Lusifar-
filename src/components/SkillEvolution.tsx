@@ -140,10 +140,6 @@ export const SkillEvolution = () => {
                    Knowledge Points are granted by the system upon Level-Ups or through successfully completing High-Rank Board Survival Quests.
                 </p>
              </div>
-
-             <SystemButton className="w-full py-4 bg-white/5 border-white/10 text-neutral-500 font-black tracking-[0.3em] text-[10px]">
-                RESET SKILLS (100k GOLD)
-             </SystemButton>
           </LegendaryCard>
 
           <SystemCard className="p-6 space-y-4 border-l-4 border-l-system-gold">

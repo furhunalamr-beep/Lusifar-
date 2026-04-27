@@ -230,13 +230,22 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [fetchStats, fetchQuests, fetchChapters, fetchNotes, fetchSkills, fetchShadows, fetchLeaderboard, fetchInventory, fetchLogs]);
 
   const updateStats = async (updates: Partial<HunterStats>) => {
-    const updated = { ...stats, ...updates };
-    setStats(updated);
-    await fetch('/api/stats/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
+    // Merge updates into our reactive state but also send it to the server.
+    // However, to prevent race conditions if called in sequence, we calculate and use functional state.
+    // Notice: functional stat update is synchronous, so sequential calls won't stomp on each other's state locally
+    let newFullStats: HunterStats | undefined;
+    setStats(prev => {
+      newFullStats = { ...prev, ...updates };
+      return newFullStats;
     });
+
+    if (newFullStats) {
+      await fetch('/api/stats/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newFullStats)
+      });
+    }
   };
 
   const addLog = async (message: string, type: SystemLog['type']) => {
@@ -256,27 +265,34 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const gainExp = async (amount: number) => {
     let leveledUp = false;
-    let nextLevel = stats.level;
-    let nextExp = stats.exp + amount;
-    let nextMaxExp = stats.maxExp;
-
-    while (nextExp >= nextMaxExp) {
-      leveledUp = true;
-      nextLevel++;
-      nextExp -= nextMaxExp;
-      nextMaxExp = Math.floor(nextMaxExp * 1.5);
-    }
-
-    const updated = { ...stats, level: nextLevel, exp: nextExp, maxExp: nextMaxExp };
-    setStats(updated);
+    let nextLevel = 0;
     
-    if (leveledUp) addLog(`[SYSTEM] LEVEL UP! YOU ARE NOW LEVEL ${nextLevel}.`, 'level_up');
-    
-    await fetch('/api/stats/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
+    let newFullStats: HunterStats | undefined;
+    setStats(prev => {
+      nextLevel = prev.level;
+      let nextExp = prev.exp + amount;
+      let nextMaxExp = prev.maxExp;
+
+      while (nextExp >= nextMaxExp) {
+        leveledUp = true;
+        nextLevel++;
+        nextExp -= nextMaxExp;
+        nextMaxExp = Math.floor(nextMaxExp * 1.5);
+      }
+
+      newFullStats = { ...prev, level: nextLevel, exp: nextExp, maxExp: nextMaxExp };
+      return newFullStats;
     });
+
+    if (newFullStats) {
+      if (leveledUp) addLog(`[SYSTEM] LEVEL UP! YOU ARE NOW LEVEL ${nextLevel}.`, 'level_up');
+      
+      await fetch('/api/stats/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newFullStats)
+      });
+    }
   };
 
   const updateDailyTask = async (task: string) => {

@@ -89,12 +89,6 @@ export const SyllabusMap = () => {
                   />
                 </div>
               </div>
-              
-              {!chapter.isLocked && (
-                <button className="absolute bottom-4 right-4 text-white/20 group-hover:text-system-cyan transition-colors">
-                  <ChevronRight size={24} />
-                </button>
-              )}
             </motion.div>
           ))}
         </div>
@@ -126,10 +120,6 @@ export const SyllabusMap = () => {
                 <p className="text-[8px] font-mono text-neutral-600 uppercase">Green: Ready for Exam • Red: Needs Review</p>
               </div>
             </div>
-
-            <SystemButton className="w-full py-4 bg-system-cyan/10 border-system-cyan/50 text-system-cyan font-black tracking-[0.2em]">
-              SYNC SYLLABUS IMAGE
-            </SystemButton>
           </SystemCard>
 
           <SystemCard className="p-6 space-y-4">
