@@ -4,16 +4,16 @@
   --color-system-cyan: #00f2ff;
   --color-system-dark: #020204;
   --color-system-blue: #0072ff;
-  --color-system-purple: #9d00ff;
+  --color-system-purple: #3b82f6;
   --color-system-gold: #ffd700;
   --color-legendary: #ffaa00;
   
   --font-system: "Outfit", "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   --color-legendary: #ffaa00;
-  --color-monarch: #9d00ff;
+  --color-monarch: #00f2ff;
   --glow-cyan: 0 0 20px rgba(0, 242, 255, 0.4);
-  --glow-purple: 0 0 20px rgba(157, 0, 255, 0.4);
+  --glow-purple: 0 0 20px rgba(0, 114, 255, 0.4);
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');

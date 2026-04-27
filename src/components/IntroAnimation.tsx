@@ -2,16 +2,18 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useSound } from '../lib/useSound';
+import { SystemLogo } from './SystemLogo';
 
 export const IntroAnimation = ({ onComplete }: { onComplete: () => void }) => {
   const { playIntroSound } = useSound();
   const [started, setStarted] = useState(false);
 
-  const handleStart = () => {
+  const handleStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setStarted(true);
     playIntroSound();
     
-    // Play TTS
+    // Restored the exact greeting requested by the user
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const msg = new SpeechSynthesisUtterance("Welcome to solo system");
@@ -23,29 +25,33 @@ export const IntroAnimation = ({ onComplete }: { onComplete: () => void }) => {
       }
       
       msg.pitch = 0.8;
-      msg.rate = 0.9;
+      msg.rate = 0.85;
       
       window.speechSynthesis.speak(msg);
     }
 
-    setTimeout(onComplete, 2000);
+    setTimeout(onComplete, 2500);
   };
 
   if (!started) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-grid-pattern cursor-pointer" onClick={handleStart}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-grid-pattern">
         <div className="text-center flex flex-col items-center">
-            <motion.img 
-              src="/logo.png" 
-              alt="System Logo" 
-              className="w-48 h-48 mb-8 object-contain drop-shadow-[0_0_30px_rgba(0,255,255,0.4)]"
-              animate={{ opacity: [0.5, 1, 0.5], scale: [0.95, 1.05, 0.95] }}
-              transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-            />
-            <button className="px-8 py-4 border-2 border-system-cyan text-system-cyan bg-system-cyan/10 font-bold uppercase tracking-[0.2em] hover:bg-system-cyan hover:text-black transition-colors rounded-none outline-none">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 1 }}
+              className="mb-8"
+            >
+              <SystemLogo size="lg" />
+            </motion.div>
+            <button 
+              onClick={handleStart}
+              className="px-8 py-4 border-2 border-system-cyan text-system-cyan bg-system-cyan/10 font-bold uppercase tracking-[0.2em] hover:bg-system-cyan hover:text-black transition-all duration-300 rounded-none outline-none hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(0,242,255,0.2)] hover:shadow-[0_0_40px_rgba(0,242,255,0.4)]"
+            >
                 [ Initialize System ]
             </button>
-            <div className="mt-4 text-[10px] text-system-cyan/50 tracking-widest">AWAITING USER CONFIRMATION</div>
+            <div className="mt-4 text-[10px] text-system-cyan/50 tracking-widest animate-pulse">AWAITING BIOMETRIC AUTHENTICATION</div>
         </div>
       </div>
     );
@@ -65,16 +71,16 @@ export const IntroAnimation = ({ onComplete }: { onComplete: () => void }) => {
         transition={{ duration: 1.5, type: "spring" }}
         className="text-center text-[4rem] font-black italic uppercase tracking-tighter text-white flex flex-col items-center justify-center"
       >
-        <motion.img 
-          src="/logo.png" 
-          alt="System Logo" 
-          className="w-64 h-64 mb-6 object-contain drop-shadow-[0_0_50px_rgba(0,255,255,0.6)]"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 1 }}
-        />
+        <motion.div
+          initial={{ rotateY: 90, opacity: 0 }}
+          animate={{ rotateY: 0, opacity: 1 }}
+          transition={{ duration: 1.2 }}
+          className="mb-6"
+        >
+          <SystemLogo size="xl" />
+        </motion.div>
         <div className="text-xl tracking-widest text-system-cyan mb-2">WELCOME TO</div>
-        <span className="text-system-purple">SOLO</span> SYSTEM
+        <span className="text-system-blue">SOLO</span> SYSTEM
       </motion.div>
     </motion.div>
   );

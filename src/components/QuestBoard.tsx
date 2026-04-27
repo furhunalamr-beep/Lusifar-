@@ -13,12 +13,13 @@ import { cn } from '../lib/utils';
 import { GoogleGenAI } from "@google/genai";
 
 export const QuestBoard = () => {
-  const { quests, fetchQuests, addLog, updateStats, stats, gainExp } = useSystem();
+  const { quests, fetchQuests, addLog, updateStats, stats, gainExp, logQuestProgress } = useSystem();
   const [isCreating, setIsCreating] = useState(false);
   const [newQuestTitle, setNewQuestTitle] = useState('');
   const [newQuestDifficulty, setNewQuestDifficulty] = useState<Rank>('E');
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'All' | 'Academic' | 'Daily'>('All');
+  const [newNotes, setNewNotes] = useState<Record<string, string>>({});
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
@@ -354,8 +355,43 @@ export const QuestBoard = () => {
                       )}
                       
                       {quest.status === 'active' && (
-                        <div className="flex gap-2">
-                          <SystemButton onClick={() => completeQuest(quest)} className="flex-1 bg-system-cyan/20 border-system-cyan/50 text-system-cyan hover:bg-system-cyan/30">
+                        <div className="space-y-4">
+                          {quest.progressLogs && quest.progressLogs.length > 0 && (
+                            <div className="space-y-2 border-t border-white/5 pt-4 max-h-32 overflow-y-auto">
+                              {quest.progressLogs.map(log => (
+                                <div key={log.id} className="text-xs text-neutral-400 bg-black/40 p-2 rounded border border-white/5">
+                                  <div className="text-[9px] text-system-cyan mb-1">{new Date(log.timestamp).toLocaleString()}</div>
+                                  <div>{log.note}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex gap-2 border-t border-white/5 pt-4">
+                            <input 
+                              type="text"
+                              placeholder="Add a progress record..."
+                              className="flex-1 bg-black/40 border border-white/10 rounded px-3 text-xs font-mono text-white focus:border-system-cyan outline-none"
+                              value={newNotes[quest.id] || ''}
+                              onChange={(e) => setNewNotes({...newNotes, [quest.id]: e.target.value})}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  logQuestProgress(quest.id, newNotes[quest.id] || '');
+                                  setNewNotes({...newNotes, [quest.id]: ''});
+                                }
+                              }}
+                            />
+                            <SystemButton 
+                              onClick={() => {
+                                logQuestProgress(quest.id, newNotes[quest.id] || '');
+                                setNewNotes({...newNotes, [quest.id]: ''});
+                              }}
+                              className="px-4 py-2 bg-system-cyan/10 border-system-cyan/30 text-system-cyan text-[10px]"
+                            >
+                              Log Entry
+                            </SystemButton>
+                          </div>
+                          
+                          <SystemButton onClick={() => completeQuest(quest)} className="w-full bg-system-cyan/20 border-system-cyan/50 text-system-cyan hover:bg-system-cyan/30">
                             Complete Mission
                           </SystemButton>
                         </div>

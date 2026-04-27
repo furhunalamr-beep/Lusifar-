@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { Shield, Sword, Zap, Heart, Brain, Eye, Activity, Dna, Cpu, Microscope, Globe, Clock, BookOpen, Target, Trophy, Flame, ChevronRight } from 'lucide-react';
 import { useSystem } from '../lib/SystemContext';
 import { StatBar, RankBadge, SystemCard, LegendaryCard, SystemButton, LegendaryTitle } from './SystemUI';
+import { SystemLogo } from './SystemLogo';
 import { cn } from '../lib/utils';
 
 export const StatsDashboard = () => {
@@ -46,13 +47,13 @@ export const StatsDashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Identity Card */}
         <SystemCard className="xl:col-span-2 relative overflow-hidden group border-system-cyan/20">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 group-hover:opacity-10 transition-all duration-1000 -mr-12 -mt-12 pointer-events-none text-system-cyan">
-            <img src="/logo.png" alt="System Logo Outline" className="w-[300px] h-[300px] object-contain opacity-50 contrast-150 grayscale" />
+          <div className="absolute top-0 right-0 p-8 opacity-[0.05] group-hover:scale-110 group-hover:opacity-10 transition-all duration-1000 -mr-12 -mt-12 pointer-events-none text-system-cyan">
+             <SystemLogo size="xl" glow={false} className="opacity-40 grayscale contrast-150" />
           </div>
           
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left relative z-10">
             <div className="relative">
-              <div className="w-32 h-32 rounded-lg border-2 border-system-purple/30 p-1 bg-black/40 relative z-10 group-hover:border-system-cyan transition-colors overflow-hidden">
+              <div className="w-32 h-32 rounded-lg border-2 border-system-blue/30 p-1 bg-black/40 relative z-10 group-hover:border-system-cyan transition-colors overflow-hidden">
                 <img 
                   src={stats.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${stats.name || 'hunter'}`} 
                   className="w-full h-full object-cover rounded filter grayscale group-hover:grayscale-0 transition-all duration-700"
@@ -74,10 +75,10 @@ export const StatsDashboard = () => {
                 <LegendaryTitle>
                   {stats.name || 'Scholar candidate'}
                 </LegendaryTitle>
-                {stats.title && <p className="text-sm font-mono text-system-purple uppercase tracking-[0.2em] mt-1 italic">"{stats.title}"</p>}
+                {stats.title && <p className="text-sm font-mono text-system-blue uppercase tracking-[0.2em] mt-1 italic">"{stats.title}"</p>}
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
-                    Student ID: <span className="text-system-purple">#AC-7729-S</span>
+                    Student ID: <span className="text-system-blue">#AC-7729-S</span>
                   </span>
                   <div className="w-1.5 h-1.5 rounded-full bg-system-cyan animate-pulse shadow-[0_0_8px_cyan]" />
                 </div>
@@ -88,7 +89,7 @@ export const StatsDashboard = () => {
                 <StatBar label="INTELLECT" current={stats.mana} max={stats.maxMana} colorClass="bg-system-blue shadow-[0_0_10px_rgba(0,149,255,0.3)]" />
                 <StatBar label="FATIGUE" current={stats.fatigue} max={stats.maxFatigue} colorClass="bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]" />
                 <div className="md:col-span-1">
-                  <StatBar label="KNOWLEDGE EXP" current={stats.exp} max={stats.maxExp} colorClass="bg-system-purple shadow-[0_0_10px_rgba(157,0,255,0.3)]" />
+                  <StatBar label="KNOWLEDGE EXP" current={stats.exp} max={stats.maxExp} colorClass="bg-system-cyan shadow-[0_0_10px_rgba(0,242,255,0.3)]" />
                 </div>
               </div>
             </div>
@@ -116,7 +117,7 @@ export const StatsDashboard = () => {
                   <p className="text-2xl font-black text-white italic">{stats.gold?.toLocaleString() || 0}</p>
                </div>
              </div>
-             <SystemButton className="text-[10px] py-1 px-3">SHOP</SystemButton>
+             <SystemButton onClick={() => setActiveTab('shop')} className="text-[10px] py-1 px-3">SHOP</SystemButton>
           </SystemCard>
         </div>
       </div>
@@ -141,9 +142,9 @@ export const StatsDashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SystemCard className="space-y-4 border-system-purple/20">
+        <SystemCard className="space-y-4 border-system-cyan/20">
           <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-            <Activity size={14} className="text-system-purple" />
+            <Activity size={14} className="text-system-cyan" />
             Academic Traits
           </h3>
           <div className="space-y-2">
@@ -163,9 +164,9 @@ export const StatsDashboard = () => {
         <SystemCard className="flex flex-col items-center justify-center text-center p-12 bg-gradient-to-br from-system-cyan/10 to-transparent border-system-cyan/20">
           <div className="mb-6 relative">
             <div className="absolute inset-0 bg-system-cyan blur-3xl opacity-20 animate-pulse" />
-            <img src="/logo.png" alt="System Logo" className="w-24 h-24 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(0,255,255,0.5)]" />
+            <SystemLogo size="lg" />
           </div>
-          <h2 className="text-xl font-black text-white italic uppercase tracking-widest mb-2 text-transparent bg-clip-text bg-gradient-to-r from-system-cyan to-white drop-shadow-[0_0_10px_rgba(0,255,255,0.3)]">The Path of Sovereignty</h2>
+          <h2 className="text-xl font-black text-white italic uppercase tracking-widest mb-2 text-transparent bg-clip-text bg-gradient-to-r from-system-cyan to-white drop-shadow-[0_0_10px_rgba(0,242,255,0.3)]">The Path of Sovereignty</h2>
           <p className="text-[10px] font-mono text-neutral-400 max-w-xs leading-relaxed uppercase tracking-tighter">
             Every minute of focus in the chamber, every chapter mastered in the roadmap, brings you closer to the absolute knowledge of the system.
           </p>

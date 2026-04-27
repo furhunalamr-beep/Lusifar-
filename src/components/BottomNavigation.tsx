@@ -21,7 +21,7 @@ export const BottomNavigation = () => {
           className={cn(
             "flex flex-col items-center justify-center p-2 rounded-lg transition-all flex-shrink-0 min-w-[60px]",
             activeTab === item.id 
-              ? "text-system-purple" 
+              ? "text-system-cyan bg-system-cyan/10" 
               : "text-neutral-500"
           )}
         >

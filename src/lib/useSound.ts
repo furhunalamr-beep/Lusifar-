@@ -35,21 +35,49 @@ export const useSound = () => {
     const ctx = audioContext.current;
     if (ctx.state === 'suspended') ctx.resume();
 
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    const now = ctx.currentTime;
+    
+    // Sub-bass impact
+    const sub = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(60, now);
+    sub.frequency.exponentialRampToValueAtTime(40, now + 1.5);
+    subGain.gain.setValueAtTime(0.3, now);
+    subGain.gain.linearRampToValueAtTime(0, now + 1.5);
+    sub.connect(subGain);
+    subGain.connect(ctx.destination);
+    
+    // Rising "data" sweep
+    const sweep = ctx.createOscillator();
+    const sweepGain = ctx.createGain();
+    sweep.type = 'sawtooth';
+    sweep.frequency.setValueAtTime(110, now);
+    sweep.frequency.exponentialRampToValueAtTime(880, now + 1.2);
+    sweepGain.gain.setValueAtTime(0, now);
+    sweepGain.gain.linearRampToValueAtTime(0.1, now + 0.1);
+    sweepGain.gain.linearRampToValueAtTime(0, now + 1.2);
+    sweep.connect(sweepGain);
+    sweepGain.connect(ctx.destination);
 
-    oscillator.type = 'sawtooth';
-    oscillator.frequency.setValueAtTime(110, ctx.currentTime);
-    oscillator.frequency.linearRampToValueAtTime(440, ctx.currentTime + 1.5);
+    // High frequency blip
+    const blip = ctx.createOscillator();
+    const blipGain = ctx.createGain();
+    blip.type = 'square';
+    blip.frequency.setValueAtTime(1200, now + 0.1);
+    blipGain.gain.setValueAtTime(0, now + 0.1);
+    blipGain.gain.linearRampToValueAtTime(0.05, now + 0.15);
+    blipGain.gain.linearRampToValueAtTime(0, now + 0.3);
+    blip.connect(blipGain);
+    blipGain.connect(ctx.destination);
 
-    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 1.5);
+    sub.start(now);
+    sweep.start(now);
+    blip.start(now);
+    
+    sub.stop(now + 1.5);
+    sweep.stop(now + 1.2);
+    blip.stop(now + 0.3);
   }, []);
 
   const speakClick = useCallback((text: string = "Confirmed") => {

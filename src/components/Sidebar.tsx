@@ -39,19 +39,19 @@ export const Sidebar = () => {
       )}>
         <div className="p-4 border-b border-white/5 flex flex-col items-center">
           <div className="relative group">
-            <div className="w-14 h-14 rounded-full border-2 border-system-purple/30 overflow-hidden relative z-10 p-1 bg-black/40">
+            <div className="w-14 h-14 rounded-full border-2 border-system-blue/30 overflow-hidden relative z-10 p-1 bg-black/40">
               <img 
                 src={stats.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${stats.name || 'hunter'}`} 
                 className="w-full h-full object-cover rounded-full filter grayscale group-hover:grayscale-0 transition-all duration-500"
                 alt="Profile"
               />
             </div>
-            <div className="absolute inset-0 bg-system-purple/20 blur-xl rounded-full scale-110 opacity-50 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-system-blue/20 blur-xl rounded-full scale-110 opacity-50 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="mt-3 text-center">
             <h2 className="text-xs font-black uppercase tracking-widest text-white">{stats.name || 'System User'}</h2>
             {stats.title && <p className="text-[8px] font-mono text-system-cyan uppercase tracking-widest mb-0.5 italic line-clamp-1">"{stats.title}"</p>}
-            <p className="text-[9px] font-mono text-system-purple uppercase font-bold tracking-tighter">Lv.{stats.level} {stats.rank}-Rank</p>
+            <p className="text-[9px] font-mono text-system-blue uppercase font-bold tracking-tighter">Lv.{stats.level} {stats.rank}-Rank</p>
           </div>
 
           <div className="w-full mt-4 space-y-2 px-1">
@@ -69,17 +69,17 @@ export const Sidebar = () => {
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-2 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all group relative",
                 activeTab === item.id 
-                  ? "bg-system-purple/10 text-system-purple active-nav-item border border-system-purple/20 shadow-[0_0_15px_rgba(157,0,255,0.1)]" 
+                  ? "bg-system-cyan/10 text-system-cyan active-nav-item border border-system-cyan/20 shadow-[0_0_15px_rgba(0,242,255,0.1)]" 
                   : "text-neutral-500 hover:text-white hover:bg-white/5"
               )}
             >
-              <item.icon size={16} className={cn("transition-transform group-hover:scale-110 shrink-0", activeTab === item.id ? "text-system-purple" : "text-neutral-600")} />
+              <item.icon size={16} className={cn("transition-transform group-hover:scale-110 shrink-0", activeTab === item.id ? "text-system-cyan" : "text-neutral-600")} />
               <div className="flex flex-col items-start text-left">
                 <span>{item.label}</span>
                 <span className="text-[7px] font-mono opacity-50 tracking-normal normal-case font-normal mt-0.5">{item.desc}</span>
               </div>
               {activeTab === item.id && (
-                <div className="absolute right-2 w-1 h-4 rounded-full bg-system-purple shadow-[0_0_10px_rgba(157,0,255,1)]" />
+                <div className="absolute right-2 w-1 h-4 rounded-full bg-system-cyan shadow-[0_0_10px_rgba(0,242,255,1)]" />
               )}
             </button>
           ))}

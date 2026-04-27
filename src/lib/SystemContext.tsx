@@ -31,6 +31,7 @@ interface SystemContextType {
   fetchInventory: () => Promise<void>;
   gainExp: (amount: number) => void;
   updateDailyTask: (task: string) => void;
+  logQuestProgress: (questId: string, note: string) => Promise<void>;
   dailyTraining: any;
   summonShadow: (file: File) => Promise<void>;
   buyItem: (item: any) => Promise<void>;
@@ -216,6 +217,23 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setLogs(await res.json());
     } catch (e) { console.error(e); }
   }, []);
+
+  const logQuestProgress = async (questId: string, note: string) => {
+    try {
+      const res = await fetch(`/api/quests/${questId}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: note || 'Checkpoint reached.' })
+      });
+      if (res.ok) {
+        await fetchQuests();
+        addLog(`[SYSTEM] QUEST PROGRESS LOGGED: ${note || 'Status Update'}`, 'success');
+      }
+    } catch (e) {
+      console.error(e);
+      addLog(`[SYSTEM] FAILED TO LOG PROGRESS.`, 'alert');
+    }
+  };
 
   useEffect(() => {
     fetchStats();
@@ -418,7 +436,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setActiveTab,
       updateStats, addLog, fetchQuests, fetchChapters, fetchNotes, fetchSkills, upgradeSkill, 
       fetchLeaderboard, fetchInventory, gainExp,
-      dailyTraining, updateDailyTask, summonShadow, buyItem, useItem, soundEnabled, toggleSound, isOnline
+      dailyTraining, updateDailyTask, logQuestProgress, summonShadow, buyItem, useItem, soundEnabled, toggleSound, isOnline
     }}>
       {children}
     </SystemContext.Provider>
