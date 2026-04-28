@@ -7,6 +7,7 @@ import { Shield, Sword, Zap, Heart, Brain, Eye, Activity, Dna, Cpu, Microscope, 
 import { useSystem } from '../lib/SystemContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { StatBar, RankBadge, SystemCard, LegendaryCard, SystemButton, LegendaryTitle, SystemHeader } from './SystemUI';
+import { AdBanner } from './AdBanner';
 import { SystemLogo } from './SystemLogo';
 import { cn } from '../lib/utils';
 
@@ -202,14 +203,12 @@ export const StatsDashboard = () => {
              <div className="w-1 h-1 bg-system-cyan rounded-full animate-bounce" style={{animationDelay: '0.4s'}} />
           </div>
         </SystemCard>
-      </div>
-
-      <div className="space-y-6">
+      </div>      <div className="space-y-6">
         <div className="flex items-center gap-3 border-b border-white/5 pb-4">
           <Activity size={18} className="text-system-cyan" />
           <h3 className="text-xs font-black uppercase tracking-[0.4em] italic">System Intelligence Feed</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {academicMetrics.map((metric) => (
             <div key={metric.label} className="system-glass border-white/5 p-6 flex flex-col gap-4 group relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-125 transition-transform">
@@ -230,6 +229,7 @@ export const StatsDashboard = () => {
           ))}
         </div>
       </div>
+      <AdBanner />
     </div>
   );
 };
