@@ -138,7 +138,9 @@ db.exec(`
     status TEXT DEFAULT 'available',
     type TEXT,
     category TEXT,
-    progress_data TEXT DEFAULT '[]'
+    progress_data TEXT DEFAULT '[]',
+    sub_tasks TEXT DEFAULT '[]',
+    ai_feedback TEXT
   );
 
   CREATE TABLE IF NOT EXISTS shadows (
@@ -195,9 +197,15 @@ db.exec(`
 try {
   db.exec("ALTER TABLE quests ADD COLUMN progress_data TEXT DEFAULT '[]'");
   console.log("[DATABASE] Migrated quests table: added progress_data");
-} catch (e) {
-  // Column already exists
-}
+} catch (e) { }
+
+try {
+  db.exec("ALTER TABLE quests ADD COLUMN sub_tasks TEXT DEFAULT '[]'");
+} catch (e) { }
+
+try {
+  db.exec("ALTER TABLE quests ADD COLUMN ai_feedback TEXT");
+} catch (e) { }
 
 try {
   db.exec("ALTER TABLE stats ADD COLUMN knowledge_points INTEGER DEFAULT 0");
@@ -568,12 +576,14 @@ async function startServer() {
         SELECT id, title, description, difficulty, 
                exp_reward as expReward, gold_reward as goldReward, 
                mana_cost as manaCost, status, type, category,
-               progress_data as progressData
+               progress_data as progressData, sub_tasks as subTasks,
+               ai_feedback as aiFeedback
         FROM quests
       `).all();
       res.json(quests.map((q: any) => ({
         ...q,
-        progressLogs: JSON.parse(q.progressData || '[]')
+        progressLogs: JSON.parse(q.progressData || '[]'),
+        subTasks: JSON.parse(q.subTasks || '[]')
       })));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -582,12 +592,12 @@ async function startServer() {
 
   app.post('/api/quests', (req, res) => {
     try {
-      const { id, title, description, difficulty, expReward, goldReward, manaCost, type, category } = req.body;
+      const { id, title, description, difficulty, expReward, goldReward, manaCost, type, category, subTasks, aiFeedback } = req.body;
       const stmt = db.prepare(`
-        INSERT INTO quests (id, title, description, difficulty, exp_reward, gold_reward, mana_cost, type, category)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO quests (id, title, description, difficulty, exp_reward, gold_reward, mana_cost, type, category, sub_tasks, ai_feedback)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      stmt.run(id, title, description, difficulty, expReward, goldReward, manaCost, type, category);
+      stmt.run(id, title, description, difficulty, expReward, goldReward, manaCost, type, category, JSON.stringify(subTasks || []), aiFeedback || null);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -625,7 +635,22 @@ async function startServer() {
 
   app.post('/api/quests/:id/complete', (req, res) => {
     try {
-      db.prepare("UPDATE quests SET status = 'completed' WHERE id = ?").run(req.params.id);
+      const { aiFeedback } = req.body;
+      if (aiFeedback) {
+        db.prepare("UPDATE quests SET status = 'completed', ai_feedback = ? WHERE id = ?").run(aiFeedback, req.params.id);
+      } else {
+        db.prepare("UPDATE quests SET status = 'completed' WHERE id = ?").run(req.params.id);
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/quests/:id/subtasks', (req, res) => {
+    try {
+      const { subTasks } = req.body;
+      db.prepare("UPDATE quests SET sub_tasks = ? WHERE id = ?").run(JSON.stringify(subTasks), req.params.id);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -716,6 +741,40 @@ async function startServer() {
     } catch (error) {
       console.error('[SERVER] Shadow Summon Error:', error);
       res.status(500).json({ error: 'Shadow summoning failed' });
+    }
+  });
+
+  // Syllabus Upload API
+  app.post('/api/syllabus/upload', upload.single('file'), async (req, res) => {
+    try {
+      const file = (req as any).file;
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      const filePath = file.path;
+      const extension = path.extname(file.originalname).toLowerCase();
+      let content = '';
+
+      if (extension === '.docx') {
+        const result = await mammoth.extractRawText({ path: filePath });
+        content = result.value;
+      } else if (extension === '.pdf') {
+        const dataBuffer = fs.readFileSync(filePath);
+        const data = await pdf(dataBuffer);
+        content = data.text;
+      } else {
+        content = fs.readFileSync(filePath, 'utf-8');
+      }
+
+      fs.unlinkSync(filePath);
+      
+      console.log(`[SERVER] Processed syllabus: ${file.originalname}, content length: ${content.length}`);
+      
+      res.json({ success: true, message: 'Syllabus uploaded and processed' });
+    } catch (error) {
+      console.error('[SERVER] Syllabus Upload Error:', error);
+      res.status(500).json({ error: 'Syllabus upload failed' });
     }
   });
 

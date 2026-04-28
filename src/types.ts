@@ -90,6 +90,8 @@ export interface Quest {
   type: 'dungeon' | 'ai' | 'manual';
   category?: string;
   progressLogs?: { id: string; timestamp: string; note: string }[];
+  subTasks?: { id: string; title: string; completed: boolean }[];
+  aiFeedback?: string;
 }
 
 export interface ShadowSkill {

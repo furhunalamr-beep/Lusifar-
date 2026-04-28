@@ -52,7 +52,7 @@ export const SystemCard = ({ className, children, ...props }: React.HTMLAttribut
 export const LegendaryCard = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div 
     className={cn(
-      "relative bg-black/90 border border-system-gold/50 backdrop-blur-3xl p-6 overflow-hidden group shadow-[0_0_40px_rgba(255,215,0,0.1)]",
+      "relative bg-black/90 border border-system-gold/50 backdrop-blur-3xl p-6 overflow-hidden group shadow-[0_0_40px_rgba(255,215,0,0.15)]",
       className
     )}
     {...props}
@@ -60,15 +60,22 @@ export const LegendaryCard = ({ className, children, ...props }: React.HTMLAttri
       clipPath: "polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)"
     }}
   >
-    {/* Animated Flare / Aura */}
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(255,215,0,0.2),transparent_70%)] pointer-events-none" />
+    {/* Dynamic Background Effects */}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,215,0,0.2),transparent_70%)] pointer-events-none group-hover:opacity-100 opacity-50 transition-opacity duration-1000" />
+    <div className="absolute inset-0 legendary-aura" />
     
+    {/* Scanner Line */}
+    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-system-gold/20 to-transparent h-full w-full pointer-events-none opacity-0 group-hover:opacity-100" 
+         style={{ animation: 'scanner 4s linear infinite' }} />
+
     {/* Animated Shimmer Line with gold */}
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-system-gold/30 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
+    <div className="absolute inset-x-0 h-px top-0 bg-gradient-to-r from-transparent via-system-gold to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2000ms] pointer-events-none" />
     
     {/* Corner Decorative Elements - Enhanced */}
-    <div className="absolute top-0 left-0 w-8 h-8 border-t-[4px] border-l-[4px] border-system-gold shadow-[0_0_15px_rgba(255,215,0,0.8)] z-20" />
-    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[4px] border-r-[4px] border-system-gold shadow-[0_0_15px_rgba(255,215,0,0.8)] z-20" />
+    <div className="absolute top-0 left-0 w-8 h-8 border-t-[4px] border-l-[4px] border-system-gold shadow-[0_0_20px_rgba(255,215,0,1)] z-20" />
+    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[4px] border-r-[4px] border-system-gold shadow-[0_0_20px_rgba(255,215,0,1)] z-20" />
+    <div className="absolute top-0 right-10 w-4 h-1 bg-system-gold/30" />
+    <div className="absolute bottom-0 left-10 w-4 h-1 bg-system-gold/30" />
     
     <div className="relative z-10">
       {children}
@@ -77,10 +84,60 @@ export const LegendaryCard = ({ className, children, ...props }: React.HTMLAttri
 );
 
 export const LegendaryTitle = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-  <h2 className={cn("text-3xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-system-gold via-white to-system-gold drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]", className)}>
+  <motion.h2 
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={cn(
+      "text-3xl md:text-5xl font-[900] italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-system-gold via-white to-system-gold drop-shadow-[0_0_15px_rgba(255,215,0,0.4)] font-display",
+      "hover:animate-[float_3s_ease-in-out_infinite]",
+      className
+    )}
+  >
     {children}
-  </h2>
+  </motion.h2>
 );
+
+export const SystemHeader = ({ title, subtitle }: { title: string, subtitle?: string }) => (
+  <div className="mb-10 space-y-2 border-l-2 border-system-cyan pl-6 relative">
+    <div className="absolute left-[-2px] top-0 h-4 w-[2px] bg-white shadow-[0_0_10px_white]" />
+    <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter font-display leading-none">
+      {title}
+    </h1>
+    {subtitle && (
+      <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-[0.4em] leading-none">
+        {subtitle}
+      </p>
+    )}
+  </div>
+);
+
+export const SystemNotification = ({ title, message, type = 'success' }: { title: string, message: string, type?: 'success' | 'alert' | 'info' }) => {
+  const colors = {
+    success: 'border-system-cyan text-system-cyan bg-system-cyan/5',
+    alert: 'border-system-red text-system-red bg-system-red/5',
+    info: 'border-system-blue text-system-blue bg-system-blue/5'
+  };
+
+  return (
+    <motion.div 
+      initial={{ x: 100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: 100, opacity: 0 }}
+      className={cn(
+        "p-4 border-l-4 system-glass flex flex-col gap-1 min-w-[300px]",
+        colors[type]
+      )}
+    >
+      <div className="text-[10px] font-black uppercase tracking-widest opacity-80 flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+        {title}
+      </div>
+      <div className="text-sm font-medium text-white/90">
+        {message}
+      </div>
+    </motion.div>
+  );
+};
 
 export const StatBar = ({ label, current, max, color, colorClass, className }: { label: string, current: number, max: number, color?: string, colorClass?: string, className?: string }) => (
   <div className={cn("w-full space-y-1", className)}>

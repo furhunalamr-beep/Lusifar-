@@ -14,6 +14,13 @@ export const ProfileEditor = () => {
   const [name, setName] = useState(stats.name || '');
   const [title, setTitle] = useState(stats.title || '');
   const [profilePic, setProfilePic] = useState(stats.profilePic || '');
+  
+  React.useEffect(() => {
+    setName(stats.name || '');
+    setTitle(stats.title || '');
+    setProfilePic(stats.profilePic || '');
+  }, [stats]);
+  
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -3,13 +3,20 @@ import { SystemButton } from './SystemUI';
 import { cn } from '../lib/utils';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
-const questions = [
-  { id: 1, question: 'What is the derivative of x^2?', options: ['x', '2x', 'x^2', '2'], correct: 1 },
-  { id: 2, question: 'What is the integral of 1/x?', options: ['ln|x|', 'x^2', '1', 'e^x'], correct: 0 },
-  { id: 3, question: 'Which of these is a prime number?', options: ['4', '6', '8', '7'], correct: 3 },
-];
+export interface QuizQuestion {
+  id: number | string;
+  question: string;
+  options: string[];
+  correct: number;
+}
 
-export const QuizTaking = ({ onExit }: { onExit: (data: { score: number, total: number }) => void }) => {
+export const QuizTaking = ({ 
+  questions, 
+  onExit 
+}: { 
+  questions: QuizQuestion[],
+  onExit: (data: { score: number, total: number }) => void 
+}) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);

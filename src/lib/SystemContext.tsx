@@ -37,6 +37,8 @@ interface SystemContextType {
   clearReadNotifications: () => Promise<void>;
   updateDailyTask: (task: string) => void;
   logQuestProgress: (questId: string, note: string) => Promise<void>;
+  updateQuestSubTasks: (questId: string, subTasks: { id: string; title: string; completed: boolean }[]) => Promise<void>;
+  completeQuestWithAI: (questId: string, exp: number, gold: number, aiFeedback: string) => Promise<void>;
   dailyTraining: any;
   summonShadow: (file: File) => Promise<void>;
   buyItem: (item: any) => Promise<void>;
@@ -246,6 +248,41 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (e) {
       console.error(e);
       addLog(`[SYSTEM] FAILED TO LOG PROGRESS.`, 'alert');
+    }
+  };
+
+  const updateQuestSubTasks = async (questId: string, subTasks: { id: string; title: string; completed: boolean }[]) => {
+    try {
+      const res = await fetch(`/api/quests/${questId}/subtasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subTasks })
+      });
+      if (res.ok) {
+        await fetchQuests();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const completeQuestWithAI = async (questId: string, exp: number, gold: number, aiFeedback: string) => {
+    try {
+      const res = await fetch(`/api/quests/${questId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiFeedback })
+      });
+      if (res.ok) {
+        await claimReward(exp, gold, {
+          title: 'MISSION ACCOMPLISHED',
+          message: 'The High Orcs acknowledge your victory. Rewards processed.',
+          type: 'success'
+        });
+        await fetchQuests();
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -472,7 +509,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setActiveTab,
       updateStats, addLog, fetchQuests, fetchChapters, fetchNotes, fetchSkills, upgradeSkill, 
       fetchLeaderboard, fetchInventory, fetchNotifications, gainExp, claimReward, markNotificationRead, clearReadNotifications,
-      dailyTraining, updateDailyTask, logQuestProgress, summonShadow, buyItem, useItem, soundEnabled, toggleSound, isOnline
+      dailyTraining, updateDailyTask, logQuestProgress, updateQuestSubTasks, completeQuestWithAI, summonShadow, buyItem, useItem, soundEnabled, toggleSound, isOnline
     }}>
       {children}
     </SystemContext.Provider>

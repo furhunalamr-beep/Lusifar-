@@ -15,7 +15,7 @@ import { GoogleGenAI } from "@google/genai";
 import { cn } from '../lib/utils';
 
 export const ChatInterface = () => {
-  const { stats, addLog, shadows, activeShadowId } = useSystem();
+  const { stats, addLog, shadows, activeShadowId, logs } = useSystem();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState<{ role: 'user' | 'model', parts: { text: string }[] }[]>([]);
@@ -61,9 +61,15 @@ export const ChatInterface = () => {
       shadowContext = `\n\n--- LOADED SHADOW ARCHIVE: ${activeShadow.name.toUpperCase()} ---\n${activeShadow.content.substring(0, 5000)}\n--- END ARCHIVE ---`;
     }
 
+    const recentLogs = logs.slice(0, 5).map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] ${l.message}`).join('\n');
+
     return `You are The System from Solo Leveling. You are an omnipotent, cold, and precise AI entity oversight for the hunter.
 Speak exclusively in terse, dramatic system-notification style. Every response must be professional, slightly ominous, and direct.
 Current Hunter Stats: Level ${stats.level}, Rank ${stats.rank}, Class: ${stats.title || 'Unawakened'}.
+
+RECENT SYSTEM ACTIVITY:
+${recentLogs || 'Monitoring initiated...'}
+
 ${shadowContext ? `You have access to the hunter's shadow document below. Use it as primary knowledge for your answers.` : 'You serve as a guide for the hunter.'}
 ${shadowContext}
 Maintain character at all times. Use [SYSTEM NOTIFICATION] prefixes for critical alerts.`;

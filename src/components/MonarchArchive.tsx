@@ -7,18 +7,48 @@ import React, { useState, useRef } from 'react';
 import { 
   Library, FileText, Upload, Plus, Search, Filter, 
   Trash2, Brain, Zap, Clock, Bookmark, ChevronRight,
-  ShieldCheck, FileUp, Ghost
+  ShieldCheck, FileUp, Ghost, Sparkles, Activity, MessageSquare
 } from 'lucide-react';
 import { useSystem } from '../lib/SystemContext';
 import { SystemCard, SystemButton } from './SystemUI';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { GoogleGenAI } from "@google/genai";
 
 export const MonarchArchive = () => {
   const { notes, shadows, summonShadow, addLog, gainExp, activeShadowId, setActiveShadowId } = useSystem();
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [summarizingId, setSummarizingId] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+
+  const summarizeShadow = async (id: string, content: string) => {
+    if (summarizingId || !content) return;
+    setSummarizingId(id);
+    addLog('[SYSTEM] INITIATING NEURAL COMPRESSION ON ARCHIVE...', 'info');
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Act as the Solo Leveling System. Summarize the following complex academic content into 3 key "Essence Points" for quick mastery. 
+        Content: ${content.substring(0, 8000)}
+        
+        Style: Terse, authoritative, used to help a hunter level up. 
+        Start with "[SYSTEM] ESSENCE EXTRACTION:".`
+      });
+
+      const summary = response.text || '[SYSTEM] EXTRACTION FAILED.';
+      setSummaries(prev => ({ ...prev, [id]: summary }));
+      addLog('[SYSTEM] ESSENCE EXTRACTED. ARCHIVE COMPRESSED.', 'success');
+    } catch (e) {
+      addLog('[SYSTEM] ERROR: MANA FLUCTUATION DURING EXTRACTION.', 'alert');
+    } finally {
+      setSummarizingId(null);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,6 +150,42 @@ export const MonarchArchive = () => {
                 {shadow.content || 'Memory Extraction in progress...'}
               </p>
             </div>
+
+            <AnimatePresence>
+              {activeShadowId === shadow.id && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-4 space-y-4">
+                    <SystemButton 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        summarizeShadow(shadow.id, shadow.content);
+                      }} 
+                      disabled={!!summarizingId}
+                      className="w-full bg-system-cyan/10 border-system-cyan/30 text-system-cyan text-[9px] h-8"
+                    >
+                      {summarizingId === shadow.id ? (
+                        <span className="flex items-center gap-2 animate-pulse"><Activity size={10} /> Extracting Essence...</span>
+                      ) : (
+                        <span className="flex items-center gap-2"><Sparkles size={10} /> Extract Essence Points</span>
+                      )}
+                    </SystemButton>
+
+                    {summaries[shadow.id] && (
+                       <div className="bg-black/60 border border-system-cyan/20 p-3 rounded italic text-[10px] text-system-cyan/90 leading-relaxed relative">
+                          <MessageSquare size={10} className="absolute -top-1.5 -left-1.5 text-system-cyan bg-black rounded-full" />
+                          <span className="font-black not-italic block mb-1 uppercase tracking-tighter">Essence Extraction:</span>
+                          {summaries[shadow.id]}
+                       </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="flex items-center justify-between pt-4 border-t border-white/5">
               <div className="flex items-center gap-2 text-neutral-600">

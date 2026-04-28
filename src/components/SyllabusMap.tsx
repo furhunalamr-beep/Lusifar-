@@ -3,15 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Layout, Map, Target, BookOpen, ChevronRight, Lock, Unlock, Zap, TrendingUp } from 'lucide-react';
+import { Layout, Map, Target, BookOpen, ChevronRight, Lock, Unlock, Zap, TrendingUp, Compass, Layers, Upload } from 'lucide-react';
 import { useSystem } from '../lib/SystemContext';
-import { SystemCard, SystemButton, StatBar } from './SystemUI';
+import { SystemCard, SystemButton, StatBar, SystemHeader, LegendaryTitle } from './SystemUI';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
+import React, { useState, useRef } from 'react';
 
 export const SyllabusMap = () => {
   const { chapters, stats, claimReward, fetchChapters, addLog } = useSystem();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      addLog(`[SYSTEM] UPLOADING SYLLABUS: ${file.name}...`, 'info');
+      const res = await fetch('/api/syllabus/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        addLog(`[SYSTEM] SYLLABUS UPLOADED SUCCESSFULLY.`, 'success');
+        await fetchChapters();
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (e) {
+      console.error(e);
+      addLog(`[SYSTEM] SYLLABUS UPLOAD FAILED.`, 'alert');
+    }
+  };
   
   const studyChapter = async (id: string) => {
     const chapter = displayChapters.find(c => c.id === id);
@@ -53,130 +79,117 @@ export const SyllabusMap = () => {
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="space-y-2">
-        <div className="flex items-center gap-2 text-system-cyan">
-          <Map size={16} />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em]">Monarch's Strategic Map</span>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 pb-20">
+      <div className="cyber-grid" />
+      
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10">
+        <SystemHeader 
+          title="Syllabus Roadmap" 
+          subtitle="Imperial Archive Connectivity"
+        />
+
+        <div className="flex items-center gap-4">
+          <SystemButton onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2">
+            <Upload size={14} /> Upload Syllabus
+          </SystemButton>
+          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept=".pdf,.docx,.txt" />
+
+          <div className="flex bg-black/60 p-1 border border-white/5">
+            <div className="px-6 py-2 flex items-center gap-2 border-r border-white/5">
+               <Target size={12} className="text-system-cyan" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Mastery Index: <span className="text-white">64%</span></span>
+            </div>
+            <div className="px-6 py-2 flex items-center gap-2">
+               <Layers size={12} className="text-system-blue" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Complexity: <span className="text-white">Rank B</span></span>
+            </div>
+          </div>
         </div>
-        <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter">Syllabus Roadmap</h1>
-        <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest max-w-2xl">
-          Visualizing your path to academic sovereignty. Chapters are locked until prerequisites are mastered.
-        </p>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 space-y-6">
-          {displayChapters.map((chapter, idx) => (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              key={chapter.id}
-              className={cn(
-                "group relative p-6 bg-black/40 border transition-all duration-500",
-                chapter.isLocked ? "border-white/5 opacity-50" : "border-white/10 hover:border-system-cyan/50"
-              )}
-              style={{ clipPath: "polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)" }}
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-start gap-4">
-                  <div className={cn(
-                    "w-12 h-12 rounded border flex items-center justify-center shrink-0 transition-colors",
-                    chapter.isLocked ? "bg-white/5 border-white/10 text-neutral-700" : "bg-system-cyan/10 border-system-cyan/30 text-system-cyan"
-                  )}>
-                    {chapter.isLocked ? <Lock size={20} /> : <BookOpen size={20} />}
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className={cn(
-                        "text-lg font-black italic uppercase tracking-tight transition-colors",
-                        chapter.isLocked ? "text-neutral-600" : "text-white group-hover:text-system-cyan"
-                      )}>{chapter.title}</h3>
-                      <span className={cn(
-                        "text-[8px] font-mono px-2 py-0.5 border rounded uppercase tracking-widest",
-                        chapter.priority === 'High' ? "border-red-500/30 text-red-500 bg-red-500/5" : 
-                        chapter.priority === 'Medium' ? "border-orange-500/30 text-orange-500 bg-orange-500/5" :
-                         "border-green-500/30 text-green-500 bg-green-500/5"
-                      )}>
-                        {chapter.priority} Priority
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
-                       <span>Weightage: {chapter.weightage}%</span>
-                       <span className="w-1 h-1 bg-neutral-800 rounded-full" />
-                       <span>{chapter.mastery}% Mastered</span>
-                    </div>
-                  </div>
-                </div>
+      <div className="space-y-10 relative z-10">
+        <div className="flex items-center gap-3 border-b border-white/5 pb-6">
+           <Compass size={20} className="text-system-cyan" />
+           <LegendaryTitle className="text-xl">Path of Knowledge</LegendaryTitle>
+        </div>
 
-                <div className="w-full md:w-64 space-y-2">
-                  <StatBar 
-                    label="MASTERY" 
-                    current={chapter.mastery} 
-                    max={100} 
-                    colorClass={chapter.mastery >= 80 ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" : chapter.mastery >= 40 ? "bg-system-cyan shadow-[0_0_10px_rgba(0,242,255,0.3)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]"} 
-                  />
-                  {!chapter.isLocked && chapter.mastery < 100 && (
-                    <button 
-                      onClick={() => studyChapter(chapter.id)}
-                      className="w-full mt-2 py-1 bg-system-cyan/10 border border-system-cyan/30 text-[9px] font-black text-system-cyan uppercase italic hover:bg-system-cyan/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Zap size={10} />
-                      Intense Study Session
-                    </button>
-                  )}
-                  {chapter.mastery === 100 && (
-                    <div className="w-full mt-2 py-1 bg-green-500/10 border border-green-500/30 text-[9px] font-black text-green-500 uppercase italic flex items-center justify-center gap-2">
-                       <Unlock size={10} />
-                       Mastered
-                    </div>
-                  )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {displayChapters.map((chapter, i) => (
+            <motion.div
+              key={chapter.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -5 }}
+              onClick={() => studyChapter(chapter.id)}
+              className={cn(
+                "system-card p-0 flex flex-col group transition-all duration-500 overflow-hidden relative",
+                chapter.isLocked ? "opacity-50 grayscale cursor-not-allowed" : "cursor-pointer hover:border-system-cyan/40"
+              )}
+            >
+              <div className="p-8 space-y-6 flex-1 min-h-[220px]">
+                <div className="flex justify-between items-start">
+                  <span className={cn(
+                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-none font-mono tracking-widest",
+                    chapter.mastery === 100 ? "bg-system-gold/20 text-system-gold border border-system-gold/30" : "bg-white/5 text-neutral-400 border border-white/10"
+                  )}>
+                    {chapter.mastery === 100 ? 'COMPLETE' : `NODE ${i+1}`}
+                  </span>
+                  {chapter.isLocked ? <Lock size={14} className="text-neutral-600" /> : <Unlock size={14} className="text-system-cyan" />}
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-xl font-[900] text-white italic uppercase tracking-tighter leading-tight font-display group-hover:text-system-cyan transition-colors">
+                    {chapter.title}
+                  </h3>
+                  <p className="text-[9px] font-mono text-neutral-500 uppercase tracking-widest">Weightage: {chapter.weightage}%</p>
                 </div>
               </div>
+
+              <div className="bg-black/60 p-6 border-t border-white/5 space-y-3">
+                 <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-1 font-display italic">
+                    <span className="text-neutral-500">Neural Sync</span>
+                    <span className="text-white">{chapter.mastery}%</span>
+                 </div>
+                 <div className="h-1 bg-white/5 relative overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${chapter.mastery}%` }}
+                      className={cn("absolute inset-y-0 left-0", chapter.mastery === 100 ? "bg-system-gold" : "bg-system-cyan")}
+                    />
+                 </div>
+              </div>
+
+              {!chapter.isLocked && (
+                 <div className="absolute inset-0 bg-system-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
             </motion.div>
           ))}
         </div>
 
-        <aside className="space-y-6">
-          <SystemCard className="p-6 space-y-6 bg-system-cyan/5 border-system-cyan/20">
-            <div className="flex items-center gap-3 text-system-cyan">
-              <TrendingUp size={24} />
-              <h3 className="text-xl font-black italic uppercase">Mastery Analytics</h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="p-4 bg-black/40 border border-white/5 space-y-2">
-                <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Total Syllabus Completion</p>
-                <div className="flex items-end justify-between">
-                  <span className="text-3xl font-black text-white italic">{(displayChapters.reduce((acc, c) => acc + c.mastery, 0) / displayChapters.length).toFixed(1)}%</span>
-                  <span className="text-[10px] font-mono text-system-cyan uppercase">Rank A Progress</span>
+        <div className="mt-12">
+          <SystemCard className="p-8 bg-system-cyan/[0.02] border-system-cyan/20">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 justify-center md:justify-start">
+                   <TrendingUp size={24} className="text-system-cyan animate-pulse" />
+                   <h3 className="text-2xl font-[900] italic uppercase tracking-tighter text-white font-display">Neural Capacity Analysis</h3>
                 </div>
+                <p className="text-[11px] font-mono text-neutral-500 uppercase tracking-[0.2em]">Comprehensive syllabus mastery metrics</p>
               </div>
-
-              <div className="p-4 bg-black/40 border border-white/5 space-y-2">
-                <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Mastery Level</p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-green-500" />
-                  <div className="w-3 h-3 rounded-sm bg-system-cyan" />
-                  <div className="w-3 h-3 rounded-sm bg-red-500" />
-                  <div className="w-3 h-3 rounded-sm bg-white/5" />
+              <div className="flex gap-12">
+                <div className="space-y-1">
+                   <p className="text-[9px] font-mono text-neutral-500 uppercase tracking-widest leading-none">Global Progress</p>
+                   <p className="text-4xl font-black text-white italic font-display">{(displayChapters.reduce((acc, c) => acc + c.mastery, 0) / displayChapters.length).toFixed(1)}%</p>
                 </div>
-                <p className="text-[8px] font-mono text-neutral-600 uppercase">Green: Ready for Exam • Red: Needs Review</p>
+                <div className="space-y-1">
+                   <p className="text-[9px] font-mono text-neutral-500 uppercase tracking-widest leading-none">Nodes Cleared</p>
+                   <p className="text-4xl font-black text-system-cyan italic font-display">{displayChapters.filter(c => c.mastery === 100).length}/{displayChapters.length}</p>
+                </div>
               </div>
             </div>
           </SystemCard>
-
-          <SystemCard className="p-6 space-y-4">
-            <div className="flex items-center gap-3 text-white">
-              <Target size={20} />
-              <h3 className="text-sm font-black italic uppercase tracking-widest">Recommended Path</h3>
-            </div>
-            <p className="text-[10px] font-mono text-neutral-500 uppercase leading-relaxed">
-              Based on Board Question Analysis, "Integrals: The Core Dungeon" represents 25% of the total marks. Prioritize this area to maximize Leveling efficiency.
-            </p>
-          </SystemCard>
-        </aside>
+        </div>
       </div>
     </div>
   );
